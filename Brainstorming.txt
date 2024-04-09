@@ -1,1 +1,7 @@
 # Vorschläge, für Ideen bezüglich der Bierdatenbank
+verschiedene Biersorten
+verschiedene Größen der Biersorten
+Preise je Liter (größe der Biere berücksichtigt)
+wie oft werden welche sorten angeboten 
+wie viel % Alkohol 
+wo kann man das bier kaufen
