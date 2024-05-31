@@ -1,0 +1,15 @@
+stages:  
+  - test  
+  
+variables:  
+  PYTHON_VERSION: "3.8"  
+  
+before_script:  
+  - python3 -m venv venv  
+  - source venv/bin/activate  
+  - pip install -r requirements.txt  
+  
+test:  
+  stage: test  
+  script:  
+    - python -m pytest  
