@@ -3,7 +3,7 @@ name: Scrapy Crawl
 on:  
   push:  
     branches:  
-      - main  # Replace with your main branch name  
+      - DEV  # Replace with your main branch name  
   
 jobs:  
   build:  
