@@ -23,5 +23,3 @@ Kurzanleitung
 4. "python -m venv ./venv"
 5. ".\venv\Scripts\activate"
 6. "pip install -r requirements.txt"
-
-Nun ist Eine virtuelle umgebung erzeugt, welche alle abhängigkeiten installiert hat
