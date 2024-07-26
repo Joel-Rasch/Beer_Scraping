@@ -2,20 +2,17 @@ import psycopg2
 from itemadapter import ItemAdapter
 
 class BeerScrapingPipeline:
-    def __init__(self, db_settings):
-        self.db_settings = db_settings
+    def __init__(self, db_url):
+        self.db_url = db_url
 
     @classmethod
     def from_crawler(cls, crawler):
-        return cls({
-            'host': crawler.settings.get('POSTGRES_HOST', 'localhost'),
-            'database': crawler.settings.get('POSTGRES_DB'),
-            'user': crawler.settings.get('POSTGRES_USER'),
-            'password': crawler.settings.get('POSTGRES_PASSWORD'),
-        })
+        return cls(
+            db_url=crawler.settings.get('DATABASE_URL')
+        )
 
     def open_spider(self, spider):
-        self.conn = psycopg2.connect(**self.db_settings)
+        self.conn = psycopg2.connect(self.db_url)
         self.cur = self.conn.cursor()
 
     def close_spider(self, spider):

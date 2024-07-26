@@ -14,10 +14,10 @@ NEWSPIDER_MODULE = "Beer_Scraping.spiders"
 
 
 ITEM_PIPELINES = {
-    'BEER_SCRAPING.pipelines.PostgresPipeline': 300,
+    'Beer_Scraping.pipelines.BeerScrapingPipeline': 300,
 }
 
-DATABASE_URL = 'postgresql://user:password@db:5432/beer_db'
+DATABASE_URL = 'postgresql://user:password@localhost:5432/beer_db'
 
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
