@@ -1,8 +1,8 @@
 import scrapy
-import json
+import re
 from scrapy.exceptions import DropItem
 from urllib.parse import urljoin
-
+from datetime import datetime
 
 class BeerSpider(scrapy.Spider):
     name = 'trinkgut_spider'
@@ -22,7 +22,10 @@ class BeerSpider(scrapy.Spider):
 
     def parse_beer(self, response):
         beer_data = {}
-
+        beer_data['waehrung'] = 'Eur'
+        beer_data['scrape_date'] = datetime.now()
+        beer_data['anbieter'] = 'Trinkgut'
+        beer_data['plz'] = '00000'
         try:
             beer_data['name'] = response.css('h1.product-detail-name::text').get().strip()
         except AttributeError:
@@ -31,6 +34,15 @@ class BeerSpider(scrapy.Spider):
             beer_data['price'] = response.xpath('//meta[@itemprop="price"]/@content').get()
         except AttributeError:
             beer_data['price'] = None
+        try:
+             raw_text = response.xpath('//dd[@itemprop="description"]/text()').get()
+             pattern = re.search(r"(\d+)\s*x\s*(\d+[.,]\d+)\s*(\w+)", raw_text)
+             result = int(pattern.group(1)) * float(pattern.group(2).replace(',', '.'))
+             beer_data['amount'] = result
+             beer_data['unit'] = pattern.group(3)
+        except AttributeError:
+            beer_data['amount'] = None
+            beer_data['unit'] = None
 
         # Extract all data from product-detail-definition-list
         definition_list = response.css('dl.product-detail-definition-list')

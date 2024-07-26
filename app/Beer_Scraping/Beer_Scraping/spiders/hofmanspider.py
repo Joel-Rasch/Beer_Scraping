@@ -1,6 +1,5 @@
 import scrapy
-import re
-
+from datetime import datetime
 
 class BeerSpider(scrapy.Spider):
     name = 'hofman_spider'
@@ -24,11 +23,14 @@ class BeerSpider(scrapy.Spider):
 
     def parse_beer(self, response):
         beer_data = {}
-
+        beer_data['scrape_date'] = datetime.now()
         # Extract price
         price = response.css('span.price::text').get()
         if price:
-            beer_data['price'] = price.strip().replace('\xa0', '')
+            parts = price.split('\xa0') if '\xa0' in price else price.split()
+            beer_data['currency'] = parts[1]
+            beer_data['price'] = parts[0]
+        beer_data['plz'] = response.css('div.product-attribute.product-attribute-logistikdetails').re_first(r'\d{5}\s|\d{4}\s')
 
         # Extract data from product attributes
         detail_list = response.css('div.product-info-attribute-container')
