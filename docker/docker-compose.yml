@@ -1,25 +1,18 @@
 version: '3.8'
 
 services:
-  app:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
-    volumes:
-      - ../app:/app
-    depends_on:
-      - db
-    environment:
-      - DATABASE_URL=postgresql://user:password@db:5432/beer_db
-
   db:
-    image: postgres:13
+    build:
+      context: .
+      dockerfile: Dockerfile-postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=beer_db
+    ports:
+      - "5432:5432"
 
 volumes:
   postgres_data:
