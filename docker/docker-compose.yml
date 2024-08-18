@@ -1,18 +1,26 @@
-version: '3.8'
-
+version: '3'
 services:
-  db:
-    build:
-      context: .
-      dockerfile: Dockerfile-postgres
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+  webcrawler:
+    build: .
     environment:
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=beer_db
+      - DB_HOST=postgres
+      - DB_NAME=crawler_db
+      - DB_USER=crawler_user
+      - DB_PASSWORD=crawler_password
+    depends_on:
+      - postgres
+  
+  postgres:
+    image: postgres
+    environment:
+      - POSTGRES_DB=crawler_db
+      - POSTGRES_USER=crawler_user
+      - POSTGRES_PASSWORD=crawler_password
     ports:
       - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
 
 volumes:
   postgres_data:
