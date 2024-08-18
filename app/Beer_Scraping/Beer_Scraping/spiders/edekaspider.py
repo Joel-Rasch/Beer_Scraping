@@ -2,7 +2,7 @@ import scrapy
 from datetime import datetime
 
 class BeerPrice(scrapy.Spider):
-    name = 'beer_price'
+    name = 'edekaspider'
     allowed_domains = 'edeka24.de'
     start_urls = ['https://www.edeka24.de/Wein-Spirituosen/Bier']
 

@@ -2,7 +2,7 @@ import scrapy
 from datetime import datetime
 
 class BeerPriceSpider(scrapy.Spider):
-    name = "beer_price"
+    name = "kauflandspider"
     allowed_domains = ["kaufland.de"]
     start_urls = ["https://www.kaufland.de/bier"]
 
