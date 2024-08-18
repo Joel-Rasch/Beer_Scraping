@@ -4,26 +4,25 @@ import pandas
 from playwright.async_api import async_playwright
 #from playwright_stealth import stealth_async
 
-import json
 import re
 
-def parse_args(args, **kwargs):
-    shortopt = kwargs.get("short")
-    longopt = kwargs.get("long")
-    requiredopt = kwargs.get("required", False)
+# def parse_args(args, **kwargs):
+#     shortopt = kwargs.get("short")
+#     longopt = kwargs.get("long")
+#     requiredopt = kwargs.get("required", False)
 
-    for i, arg in enumerate(args):
-        if arg == shortopt or arg == longopt:
-            if i + 1 < len(args):
-                value = args[i + 1]
-                args[:] = [item for idx, item in enumerate(args) if idx not in (i, i+2)]
-                return value
+#     for i, arg in enumerate(args):
+#         if arg == shortopt or arg == longopt:
+#             if i + 1 < len(args):
+#                 value = args[i + 1]
+#                 args[:] = [item for idx, item in enumerate(args) if idx not in (i, i+2)]
+#                 return value
 
-    if requiredopt:
-        print(f"Error: {longopt} or {shortopt} is a required argument")
-        exit(1)
+#     if requiredopt:
+#         print(f"Error: {longopt} or {shortopt} is a required argument")
+#         exit(1)
 
-    return None
+#     return None
 
 async def browse_page(link, logic_fn):
     CHROMIUM_ARGS= [
