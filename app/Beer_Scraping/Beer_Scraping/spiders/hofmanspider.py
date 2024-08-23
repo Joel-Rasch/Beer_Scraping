@@ -1,12 +1,27 @@
 import scrapy
 from datetime import datetime
+import os
+import sys
+
+# Get the current directory of this file
+current_directory = os.path.dirname(os.path.realpath(__file__))
+
+# Get the parent directory
+parent_directory = os.path.dirname(os.path.dirname(os.path.dirname(current_directory)))
+
+# Add the parent directory to sys.path
+sys.path.append(parent_directory)
+
+# Import the BeerDatabase class
+from Dbuploader import BeerDatabase
 
 class BeerSpider(scrapy.Spider):
-    name = 'hofman_spider'
+    name = 'hofmanspider'
     start_urls = ['https://www.hoffmannbringts.de/bier?p=1']
 
     def __init__(self, *args, **kwargs):
         super(BeerSpider, self).__init__(*args, **kwargs)
+        self.db = BeerDatabase(dbname='crawler_db', user='crawler_user', password='crawler_password')
         self.site = 1
 
     def parse(self, response):
@@ -23,15 +38,19 @@ class BeerSpider(scrapy.Spider):
 
     def parse_beer(self, response):
         beer_data = {}
-        beer_data['scrape_date'] = datetime.now()
-        beer_data['anbieter'] = 'Getränke Hoffmann'
+        beer_data['date'] = datetime.now()
+        beer_data['reseller'] = 'Getränke Hoffmann'
         # Extract price
         price = response.css('span.price::text').get()
         if price:
             parts = price.split('\xa0') if '\xa0' in price else price.split()
             beer_data['currency'] = parts[1]
-            beer_data['price'] = parts[0]
-        beer_data['plz'] = response.css('div.product-attribute.product-attribute-logistikdetails').re_first(r'\d{5}\s|\d{4}\s')
+            beer_data['price'] = float(parts[0].replace(',','.'))
+        beer_data['zipcode'] = response.css('div.product-attribute.product-attribute-logistikdetails').re_first(r'\d{5}\s|\d{4}\s')
+
+        amount_list = response.xpath('//div[@class="product-attribute product-attribute-m29"]/div/span/text()').re_first('\d+\w\d+\.\d+').split('x')
+        beer_data['quantity'] = float(amount_list[0]) * float(amount_list[1])
+        beer_data['unit'] = response.xpath('//div[@class="product-attribute product-attribute-m29"]/div/span/text()').get()[-1]
 
         # Extract data from product attributes
         detail_list = response.css('div.product-info-attribute-container')
@@ -43,15 +62,18 @@ class BeerSpider(scrapy.Spider):
 
         # Extract name and other relevant information
         beer_data['name'] = response.css('span.base::text').get()
-        description = response.css('div.product-view-shortdescription span::text').get()
-        if description:
-            beer_data['description'] = description.strip()
 
         # Extract alcohol content
-        alcohol_content = response.css('div.product-attribute-logistikdetails ::text').re_first(
-            r'\d.*\%')
+        alcohol_content = response.xpath("//div[contains(@class, 'product-attribute-logistikdetails')]//text()[contains(., 'Alkoholgehalt:')]/following::text()[1]").re_first(r'(\d+\.\d+).*\%')
+
         if alcohol_content:
-            beer_data['alcohol_content'] = alcohol_content
+            beer_data['alcohol_content'] = float(alcohol_content)
+
+        try:
+            result = self.db.process_entries(beer_data)
+            self.logger.info(f"Inserted data: {result}")
+        except Exception as e:
+            self.logger.error(f"Error inserting data: {e}")
 
         yield beer_data
 
