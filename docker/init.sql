@@ -1,116 +1,63 @@
--- Create Currencies table
-CREATE TABLE currencies (
-    currency_id SERIAL PRIMARY KEY,
-    currency_code VARCHAR(3) NOT NULL UNIQUE,
-    currency_name VARCHAR(50) NOT NULL
+-- Create the Beers table  
+CREATE TABLE Beers (  
+    beer_id SERIAL PRIMARY KEY,  
+    name VARCHAR(255) NOT NULL,  
+    alcohol_percentage DECIMAL(5, 2)  
+);  
+
+-- Create the Formats table  
+CREATE TABLE Formats (  
+    format_id SERIAL PRIMARY KEY,  
+    beer_id INT,  
+    quantity DECIMAL(5, 2) NOT NULL,  
+    unit VARCHAR(50) NOT NULL,  
+    FOREIGN KEY (beer_id) REFERENCES Beers(beer_id)  
+);  
+
+-- Create the Prices table  
+CREATE TABLE Prices (  
+    price_id SERIAL PRIMARY KEY,  
+    format_id INT,  
+    price DECIMAL(10, 2) NOT NULL,  
+    currency VARCHAR(10) NOT NULL,  
+    date DATE NOT NULL,  
+    FOREIGN KEY (format_id) REFERENCES Formats(format_id)  
+);  
+
+-- Create the Resellers table  
+CREATE TABLE Resellers (  
+    reseller_id SERIAL PRIMARY KEY,  
+    reseller_name VARCHAR(255) NOT NULL,  
+    zipcode VARCHAR(20)  
+    UNIQUE (reseller_name, zipcode) 
 );
 
--- Create Units table
-CREATE TABLE units (
-    unit_id SERIAL PRIMARY KEY,
-    unit_name VARCHAR(25) NOT NULL UNIQUE
+CREATE TABLE Format_Resellers ( 
+format_reseller_id SERIAL PRIMARY KEY, 
+format_id INT, reseller_id INT, 
+FOREIGN KEY (format_id) REFERENCES Formats(format_id), 
+FOREIGN KEY (reseller_id) REFERENCES Resellers(reseller_id) 
 );
 
--- Create Suppliers table
-CREATE TABLE suppliers (
-    supplier_id SERIAL PRIMARY KEY,
-    supplier_name VARCHAR(255) NOT NULL,
-    postal_code VARCHAR(10) NOT NULL
-);
-
--- Create Brands table
-CREATE TABLE brands (
-    brand_id SERIAL PRIMARY KEY,
-    brand_name VARCHAR(255) NOT NULL UNIQUE
-);
-
--- Create Materials table
-CREATE TABLE materials (
-    material_id SERIAL PRIMARY KEY,
-    material_name VARCHAR(50) NOT NULL UNIQUE
-);
-
--- Create Deposit_Types table
-CREATE TABLE deposit_types (
-    deposit_type_id SERIAL PRIMARY KEY,
-    deposit_type_name VARCHAR(50) NOT NULL UNIQUE
-);
-
--- Create Beers table
-CREATE TABLE beers (
-    beer_id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    brand_id INTEGER REFERENCES brands(brand_id),
-    description TEXT,
-    alcohol_content NUMERIC(4, 2)
-);
-
--- Create main Beer_Data table
-CREATE TABLE beer_data (
-    id SERIAL PRIMARY KEY,
-    beer_id INTEGER REFERENCES beers(beer_id),
-    price NUMERIC(10, 2) NOT NULL,
-    currency_id INTEGER REFERENCES currencies(currency_id),
-    quantity NUMERIC(10, 2) NOT NULL,
-    unit_id INTEGER REFERENCES units(unit_id),
-    supplier_id INTEGER REFERENCES suppliers(supplier_id),
-    material_id INTEGER REFERENCES materials(material_id),
-    deposit_type_id INTEGER REFERENCES deposit_types(deposit_type_id),
-    article_number VARCHAR(50),
-    delivery_time VARCHAR(50),
-    scrape_date TIMESTAMP NOT NULL
-);
-
--- Create views for the dashboard
-CREATE VIEW beer_price_overview AS
+-- Create a view for beer analysis
+CREATE VIEW BeerAnalysis AS
 SELECT
     b.name AS beer_name,
-    br.brand_name,
-    bd.price,
-    c.currency_code,
-    bd.quantity,
-    u.unit_name,
-    s.supplier_name,
-    s.postal_code,
-    m.material_name,
-    dt.deposit_type_name,
-    b.alcohol_content,
-    bd.scrape_date
+    b.alcohol_percentage,
+    f.quantity AS format_quantity,
+    f.unit AS format_unit,
+    p.price AS latest_price,
+    p.currency,
+    p.date AS price_date,
+    r.reseller_name,
+    r.zipcode
 FROM
-    beer_data bd
-JOIN beers b ON bd.beer_id = b.beer_id
-JOIN brands br ON b.brand_id = br.brand_id
-JOIN currencies c ON bd.currency_id = c.currency_id
-JOIN units u ON bd.unit_id = u.unit_id
-JOIN suppliers s ON bd.supplier_id = s.supplier_id
-JOIN materials m ON bd.material_id = m.material_id
-JOIN deposit_types dt ON bd.deposit_type_id = dt.deposit_type_id;
-
-CREATE VIEW price_trends AS
-SELECT
-    b.name AS beer_name,
-    bd.price,
-    c.currency_code,
-    bd.quantity,
-    u.unit_name,
-    bd.scrape_date
-FROM
-    beer_data bd
-JOIN beers b ON bd.beer_id = b.beer_id
-JOIN currencies c ON bd.currency_id = c.currency_id
-JOIN units u ON bd.unit_id = u.unit_id
-ORDER BY
-    b.name, bd.scrape_date;
-
-CREATE VIEW supplier_statistics AS
-SELECT
-    s.supplier_name,
-    COUNT(DISTINCT bd.beer_id) AS unique_beers,
-    AVG(bd.price) AS avg_price,
-    MIN(bd.price) AS min_price,
-    MAX(bd.price) AS max_price
-FROM
-    beer_data bd
-JOIN suppliers s ON bd.supplier_id = s.supplier_id
-GROUP BY
-    s.supplier_name;
+    Beers b
+JOIN
+    Formats f ON b.beer_id = f.beer_id
+JOIN
+    Prices p ON f.format_id = p.format_id
+JOIN
+    Format_Resellers fr ON f.format_id = fr.format_id
+JOIN
+    Resellers r ON fr.reseller_id = r.reseller_id
