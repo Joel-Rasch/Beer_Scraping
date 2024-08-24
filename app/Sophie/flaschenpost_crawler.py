@@ -2,27 +2,19 @@ import asyncio
 from datetime import date
 import pandas
 from playwright.async_api import async_playwright
-#from playwright_stealth import stealth_async
+import os
+import sys
 
-import re
+# Get the current directory of this file
+current_directory = os.path.dirname(os.path.realpath(__file__))
 
-# def parse_args(args, **kwargs):
-#     shortopt = kwargs.get("short")
-#     longopt = kwargs.get("long")
-#     requiredopt = kwargs.get("required", False)
+# Get the parent directory
+parent_directory = os.path.dirname(current_directory)
 
-#     for i, arg in enumerate(args):
-#         if arg == shortopt or arg == longopt:
-#             if i + 1 < len(args):
-#                 value = args[i + 1]
-#                 args[:] = [item for idx, item in enumerate(args) if idx not in (i, i+2)]
-#                 return value
+# Add the parent directory to sys.path
+sys.path.append(parent_directory)
 
-#     if requiredopt:
-#         print(f"Error: {longopt} or {shortopt} is a required argument")
-#         exit(1)
-
-#     return None
+from Dbuploader import BeerDatabase
 
 async def browse_page(link, logic_fn):
     CHROMIUM_ARGS= [
@@ -32,38 +24,70 @@ async def browse_page(link, logic_fn):
         browser = await p.chromium.launch_persistent_context(user_data_dir='./userdata/', headless=False, slow_mo=5000, args=CHROMIUM_ARGS)
         page = await browser.new_page()
         await page.goto(link)
-        await fill_zipcode(page, "22159")
-        subcategories = await page.locator('.subCategory').all()
-        subcategory_links = []
-        for subcategory in subcategories:
+        #await fill_zipcode(page, "22159") #inital zipcode to load 
+        subcategory_links = await get_subcategory_links(page)
+        zipcodes = get_zipcodes()
+        for zipcode in zipcodes:
+            valid_zip = await fill_zipcode(page, str(zipcode))
+            if valid_zip:
+                await goto_subcategory(page, subcategory_links, logic_fn, zipcode)
+        await browser.close()
+
+def get_zipcodes():
+    zipcodes = pandas.read_csv("zipcodes.csv", sep=";")   
+    zipcodes = zipcodes['Name'].tolist()
+    zipcodes = list(set(zipcodes))
+    return zipcodes
+
+async def fill_zipcode(page, zipcode):
+    element = None
+    if (await page.locator('.zipcode').is_visible()):
+        element = page.locator('.zipcode')
+    elif (await page.locator('.fp_modal_container').is_visible()):
+        element = page.locator('.fp_modal_container')
+
+    valid_zip = False
+    if element:
+        await element.get_by_test_id("q3FmlhEfSKrk3eUtgXANe").fill(zipcode)
+        if (await element.locator('.infotext.red').is_visible()):
+            # if info text is visible, zip is invalid
+            await element.get_by_test_id("q3FmlhEfSKrk3eUtgXANe").fill("")
+        else:
+            # click to check if zip is valid
+            await element.get_by_role("button").click()
+            if (await element.locator('.simplebar-mask').is_visible()):
+                await page.locator('.closeButton').click()
+                # PLZ is invalid, valid_zip still false
+            else:
+                # Zip is valid
+                valid_zip = True
+    else:
+        await page.locator('.change_zip_code').first.click()
+        valid_zip = await fill_zipcode(page, zipcode)  # rekursive call with return value
+
+    return valid_zip
+
+async def get_subcategory_links(page):
+    subcategories = await page.locator('.subCategory').all()
+    subcategory_links = []
+    for subcategory in subcategories:
             domain = "https://www.flaschenpost.de"
             link = await subcategory.locator('a').get_attribute('href')
             full_link = f"{domain}{link}"
             subcategory_links.append(full_link)
-        for link in subcategory_links:
-            postfix = link.replace("https://www.flaschenpost.de/bier/", "")
-            await page.goto(link)
-            await logic_fn(page, postfix)
-        await browser.close()
+    return subcategory_links
 
-
+async def goto_subcategory(page, links, logic_fn, zipcode):
+    for link in links:
+        postfix = link.replace("https://www.flaschenpost.de/bier/", "")
+        await page.goto(link)
+        await logic_fn(page, postfix, zipcode)                   
 
 def split_price(price):
     price = price.split()
     currency = price[1]
     price = price[0]
     return currency, price
-
-def get_screenshot_path(link):
-    # Extract domain name to use as screenshot path
-    match = re.search(r"https?://(?:www\.)?([^/]+)", link)
-    if match:
-        domain = match.group(1).split('.')[0]
-        screenshot_path = f"{domain}.png"
-    else:
-        print(f"The given URL {link} is invalid for the screenshot path")
-        exit(1)
-    return screenshot_path
 
 def parse_product_string(amount_des):
     amount_infos = amount_des.split('L')
@@ -72,13 +96,26 @@ def parse_product_string(amount_des):
     return quantity, unit
 
 async def get_content(page, zipcode):
+    
+    # Dictionary for current product data
+    beer_data = {}
+
+    # DataFrame for CSV export
     dataframe = pandas. DataFrame(columns = ['name', 'quantity', 
                                              'unit', 'price', 'currency', 
                                              'date', 'reseller', 'zipcode'])
+    
+    # Get all products on the page
     products =  await page.locator('.product').all()
+    
+    # Iterate over all products
     for product in products:
-        title = await product.get_by_role('heading').inner_text()
+        name = await product.get_by_role('heading').inner_text()
+        
+        #Get all variants of a product
         variants = await product.get_by_test_id("KkvSok_oKKBlcW0k_i_c3").all()
+        
+        # Iterate over all variants of a product
         for variant in variants:
             amount = await variant.locator('.amount_description').inner_text()
             quantity, unit = parse_product_string(amount)
@@ -91,13 +128,22 @@ async def get_content(page, zipcode):
             current_date = date.today().strftime("%d/%m/%Y")
             reseller = "Flaschenpost"
             zipcode = zipcode
-            # print(title)
-            # print(name)
-            # print(quantity)
-            # print(unit)
-            # print(price)
-            # print(currency)
-            dataframe = dataframe._append({'name': title, 
+            
+            # Current product data
+            beer_data =  {'name': name,
+               'quantity': quantity,
+               'unit': unit,
+               'price': price,
+               'currency': currency,
+               'date': current_date,
+               'reseller': reseller,
+               'zipcode': zipcode}
+            
+            # Create entry with current product data
+            write_to_db(beer_data)
+            
+            # Fill DataFrame for CSV export
+            dataframe = dataframe._append({'name': name, 
             'quantity': quantity, 
             'unit': unit, 
             'price': price, 
@@ -109,39 +155,31 @@ async def get_content(page, zipcode):
     
     return dataframe
 
-def create_csv(dataframe, postfix):
-    dataframe.to_csv(f"./flaschenpost_exports/flaschenpost_{postfix}_{date.today().strftime('%Y%m%d')}.csv", index=False)
+def create_csv(dataframe, postfix, zipcode):
+    dataframe.to_csv(f"./Export/flaschenpost_exports/flaschenpost_{zipcode}_{postfix}_{date.today().strftime('%Y%m%d')}.csv", index=False)
+    print("CSV created")
 
-async def fill_zipcode(page, zipcode):
-    if (await page.locator('.fp_modal_container').is_visible()):
-        await page.get_by_test_id("q3FmlhEfSKrk3eUtgXANe").fill(zipcode)
-        await page.get_by_test_id("bpytcH0GkAtjmZakRMjs").click()
+def write_to_db(entry):
+    try:
+        result = BeerDatabase.process_entries(entry)
+        print(f"Inserted data: {result}")
+    except Exception as e:
+        print(f"Error inserting data: {e}")
+    
 
-async def main(args):
-    startlink = parse_args(args, short="-l", long="--link", required=True)
-    #screenshot_path = get_screenshot_path(link)
-    zipcode = "22159"
-    async def page_logic(page, postfix):
+
+async def main():
+    startlink = "https://www.flaschenpost.de/bier/pils"
+    first_zipcode = "22159"
+    async def page_logic(page, postfix, zipcode):
         products_df = pandas. DataFrame(columns = ['name', 'quantity', 
                                              'unit', 'price', 'currency', 
                                              'date', 'reseller', 'zipcode'])
-        #await fill_zipcode(page, zipcode)
-        #await page.screenshot(path=screenshot_path)
-        #print(await page.title())
-        #await get_content(page, zipcode)
-        products = await get_content(page, zipcode)
-        #products_df = products_df.append(products)
-        #create_csv(products)
+        products = await get_content(page, first_zipcode)
         products_df = products_df._append(products)
-        create_csv(products_df, postfix)
+        create_csv(products_df, postfix, zipcode)
     
     await browse_page(startlink, page_logic)
-    
-
-    #create_csv(products_df)
-
 
 if __name__ == "__main__":
-    import sys
-    asyncio.run(main(sys.argv[1:]))
-    # asyncio.run(second_main(sys.argv[1:]))
+    asyncio.run(main())
