@@ -1,7 +1,21 @@
 import scrapy
 from datetime import datetime
+import os
+import sys
 
-class BeerPrice(scrapy.Spider):
+# Get the current directory of this file
+current_directory = os.path.dirname(os.path.realpath(__file__))
+
+# Get the parent directory
+parent_directory = os.path.dirname(os.path.dirname(os.path.dirname(current_directory)))
+
+# Add the parent directory to sys.path
+sys.path.append(parent_directory)
+
+# Import the BeerDatabase class
+from Dbuploader import BeerDatabase
+
+class BeerSpider(scrapy.Spider):
     name = 'edekaspider'
     allowed_domains = 'edeka24.de'
     start_urls = ['https://www.edeka24.de/Wein-Spirituosen/Bier']
@@ -12,15 +26,14 @@ class BeerPrice(scrapy.Spider):
         for product in products:
 
             yield {
-                #'Name': product.css('div.product-details').get(),
-                'Name': product.css('a.title::attr(title)').get().strip(),
-                #'Preis': product.css('div.price').get().replace('<div class="price">\n                                        ','').replace(' €\n                                                                            </div>',''),
-                'Preis': product.css('p.price-note').get().replace('<p class="price-note">','').replace('zzgl. 0,25 € Pfand','').replace('</p>','').replace('zzgl. 1,00 € Pfand','').replace('€/l','').strip(),
-                'Waehrung': 'Euro',
-                #'Menge': product.css('a.title::attr(title)').get()[-6:].replace('L','').replace('l',''),
-                'Menge': '1',
-                'Mengeneinheit': 'L',
-                'Anbieter': 'Edeka24.de',
-                'PLZ': '0000',
-                'Scrape_Date': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                'name': product.css('a.title::attr(title)').get().strip(),
+                'quantity': '1',
+                'unit': 'L',
+                'price': product.css('p.price-note').get().replace('<p class="price-note">','').replace('zzgl. 0,25 € Pfand','').replace('</p>','').replace('zzgl. 1,00 € Pfand','').replace('€/l','').strip(),
+                'currency': '€',
+                'date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'reseller': 'Edeka24.de',
+                'zipcode': '0000',
+                'alcohol_content': '0000'
+
             }
