@@ -2,7 +2,7 @@ import psycopg2
 from contextlib import contextmanager
 
 class BeerDatabase:
-    def __init__(self, dbname, user, password, host='localhost', port='5432'):
+    def __init__(self, dbname, user, password, host='postgres', port='5432'):
         self.connection_params = {
             'dbname': dbname,
             'user': user,
