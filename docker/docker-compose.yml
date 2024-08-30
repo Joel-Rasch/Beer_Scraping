@@ -1,7 +1,9 @@
 version: '3'
 services:
   webcrawler:
-    build: .
+    build: 
+      context: ..
+      dockerfile: docker/Dockerfile
     environment:
       - DB_HOST=postgres
       - DB_NAME=crawler_db
@@ -20,7 +22,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
 
 volumes:
   postgres_data:
