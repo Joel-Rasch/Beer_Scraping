@@ -112,7 +112,7 @@ class BeerDatabase:
             return self.process_entry(entries)
 
 if __name__ == "__main__":
-    db = BeerDatabase(dbname='crawler_db', user='crawler_user', password='crawler_password', host='localhost', port='5432')
+    db = BeerDatabase(dbname='crawler_db', user='crawler_user', password='crawler_password', host='postgres', port='5432')
 
 
 ## For Debug and to see data structure and type
