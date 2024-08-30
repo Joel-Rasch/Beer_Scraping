@@ -9,7 +9,7 @@ CREATE TABLE Beers (
 CREATE TABLE Formats (  
     format_id SERIAL PRIMARY KEY,  
     beer_id INT,  
-    quantity DECIMAL(5, 2) NOT NULL,  
+    quantity DECIMAL(8, 2) NOT NULL,  
     unit VARCHAR(50) NOT NULL,  
     FOREIGN KEY (beer_id) REFERENCES Beers(beer_id)  
 );  
