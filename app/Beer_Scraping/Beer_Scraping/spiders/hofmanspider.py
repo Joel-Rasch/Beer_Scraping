@@ -49,7 +49,7 @@ class BeerSpider(scrapy.Spider):
         beer_data['zipcode'] = response.css('div.product-attribute.product-attribute-logistikdetails').re_first(r'\d{5}\s|\d{4}\s')
 
         amount_list = response.xpath('//div[@class="product-attribute product-attribute-m29"]/div/span/text()').re_first('\d+\w\d+\.\d+').split('x')
-        beer_data['quantity'] = float(amount_list[0]) * float(amount_list[1])
+        beer_data['quantity'] = round(float(amount_list[0]) * float(amount_list[1]),2)
         beer_data['unit'] = response.xpath('//div[@class="product-attribute product-attribute-m29"]/div/span/text()').get()[-1]
 
         # Extract data from product attributes

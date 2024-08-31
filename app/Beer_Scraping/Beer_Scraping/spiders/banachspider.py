@@ -74,7 +74,7 @@ class BanachspiderSpider(scrapy.Spider):
         # Extract alcohol content
         alcohol_content = response.xpath('//div[@class="product--description"]/p/strong/text()').re_first(r'(\d.*)\%')
         alcohol_content = alcohol_content.replace(',', '.')
-        alcohol_content = float(alcohol_content)
+        alcohol_content = round(float(alcohol_content),2)
         if alcohol_content:
             beer_data['alcohol_content'] = alcohol_content
 

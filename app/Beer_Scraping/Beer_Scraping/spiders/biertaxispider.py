@@ -52,7 +52,7 @@ class BeerSpider(scrapy.Spider):
         beer_data['zipcode'] = response.css("table.table.table-striped").re_first(' (\d{5}) ')
 
         beer_data['quantity'] = round(float(response.xpath("//span[contains(@class,'info package')]/text()").get().split('x')[0]
-) * float(response.xpath("//span[contains(@class,'info package')]/text()").get().split('x')[-1].split('l')[0]),2)
+        ) * float(response.xpath("//span[contains(@class,'info package')]/text()").get().split('x')[-1].split('l')[0]),2)
         beer_data['unit'] = response.xpath("//span[contains(@class,'info package')]/text()").get().split('x')[-1].split(' ')[0][-1]
 
 
@@ -60,7 +60,7 @@ class BeerSpider(scrapy.Spider):
         beer_data['name'] = response.xpath("//div[contains(@class,'article-wrapper')]/h1/text()").get()
 
         # Extract alcohol content
-        beer_data['alcohol_content'] = float(response.css("table.table.table-striped").re_first('(\d*\.\d*)%'))
+        beer_data['alcohol_content'] = round(float(response.css("table.table.table-striped").re_first('(\d*\.\d*)%')),2)
 
         try:
             result = self.db.process_entries(beer_data)
