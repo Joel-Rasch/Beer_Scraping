@@ -23,3 +23,6 @@ Kurzanleitung
 4. "python -m venv ./venv"
 5. ".\venv\Scripts\activate"
 6. "pip install -r requirements.txt"
+
+
+Zum starten in den Docker odner navigieren und "Docker-compuse up --build" eingeben.
