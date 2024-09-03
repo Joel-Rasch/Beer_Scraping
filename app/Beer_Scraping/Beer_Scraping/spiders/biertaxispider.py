@@ -58,7 +58,7 @@ class BeerSpider(scrapy.Spider):
 
         # Extract name and other relevant information
         beer_data['name'] = response.xpath("//div[contains(@class,'article-wrapper')]/h1/text()").get()
-        beer_data['name'] = re.search(r"^[^\d\s]+(?:\s[^\d\s]+)*",beer_data['name'])
+        beer_data['name'] = re.search(r"^[^\d\s]+(?:\s[^\d\s]+)*",beer_data['name'])[0]
         # Extract alcohol content
         beer_data['alcohol_content'] = round(float(response.css("table.table.table-striped").re_first('(\d*\.\d*)%')),2)
 
