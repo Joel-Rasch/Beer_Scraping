@@ -6,6 +6,7 @@ import csv
 import sys
 import os
 from playwright.sync_api import sync_playwright
+from playwright_stealth import stealth_sync
 current_directory = os.path.dirname(os.path.realpath(__file__))
 parent_directory = os.path.dirname(current_directory)
 sys.path.append(parent_directory)
@@ -120,13 +121,16 @@ def run(output='database', db=None, csv_filename='beer_data.csv'):
             args=[
             '--window-size=1920,1080',
             '--start-maximized',
-            '--no-sandbox',
-            '--disable-gpu',
+            '--window-position=0,0',
+            '--ignore-certifcate-errors',
+            '--ignore-certifcate-errors-spki-list',
             '--disable-setuid-sandbox',
             '--disable-extensions',
             '--disable-plugins-discovery',
             '--disable-blink-features=AutomationControlled',
+            '--user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36"',
             '--disable-infobars',
+            '--disable-features=WebGL',
             '--lang=de-DE,de',
             '--start-maximized',
             ],
@@ -134,15 +138,11 @@ def run(output='database', db=None, csv_filename='beer_data.csv'):
         )
 
         context = browser.new_context(
-            viewport=None,
-            user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36',
-            locale='de-DE',
-            timezone_id='Europe/Berlin',
-            permissions=['geolocation'],
-            geolocation={'latitude': 52.5200, 'longitude': 13.4050},  
+            user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36'
         )
-
+        
         page = context.new_page()
+
         first = True
         reseller = 'Rewe'
         zip_codes = ['25436', '22089']
