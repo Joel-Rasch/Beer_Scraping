@@ -2,6 +2,7 @@ import scrapy
 from datetime import datetime
 import os
 import sys
+import re
 
 # Get the current directory of this file
 current_directory = os.path.dirname(os.path.realpath(__file__))
@@ -62,7 +63,7 @@ class BeerSpider(scrapy.Spider):
 
         # Extract name and other relevant information
         beer_data['name'] = response.css('span.base::text').get()
-
+        beer_data['name'] = re.search(r"^[^\d\s]+(?:\s[^\d\s]+)*",beer_data['name'])
         # Extract alcohol content
         alcohol_content = response.xpath("//div[contains(@class, 'product-attribute-logistikdetails')]//text()[contains(., 'Alkoholgehalt:')]/following::text()[1]").re_first(r'(\d+\.\d+).*\%')
 
