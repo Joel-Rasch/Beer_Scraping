@@ -63,13 +63,13 @@ class BeerSpider(scrapy.Spider):
 
         # Extract name and other relevant information
         beer_data['name'] = response.css('span.base::text').get()
-        beer_data['name'] = re.search(r"^[^\d\s]+(?:\s[^\d\s]+)*",beer_data['name'])[0]
+
         # Extract alcohol content
         alcohol_content = response.xpath("//div[contains(@class, 'product-attribute-logistikdetails')]//text()[contains(., 'Alkoholgehalt:')]/following::text()[1]").re_first(r'(\d+\.\d+).*\%')
 
         if alcohol_content:
             beer_data['alcohol_content'] = float(alcohol_content)
-
+        beer_data['name'] = re.search(r"^[^\d\s]+(?:\s[^\d\s]+)*", beer_data['name'])[0]
         try:
             result = self.db.process_entries(beer_data)
             self.logger.info(f"Inserted data: {result}")
