@@ -34,7 +34,7 @@ async def browse_page(link, logic_fn):
         await browser.close()
 
 def get_zipcodes():
-    zipcodes = pandas.read_csv("zipcodes.csv", sep=";")   
+    zipcodes = pandas.read_csv(f"{current_directory}/zipcodes.csv", sep=";")   
     zipcodes = zipcodes['Name'].tolist()
     zipcodes = list(set(zipcodes))
     return zipcodes
@@ -54,8 +54,8 @@ async def fill_zipcode(page, zipcode):
             await element.get_by_test_id("q3FmlhEfSKrk3eUtgXANe").fill("")
         else:
             # click to check if zip is valid
-            await element.get_by_role("button").click()
-            if (await element.locator('.simplebar-mask').is_visible()):
+            await element.locator('.fp_button_primary').click()
+            if (await element.locator('.modal_wrapper_container').is_visible()):
                 await page.locator('.closeButton').click()
                 # PLZ is invalid, valid_zip still false
             else:
@@ -177,7 +177,7 @@ async def main():
                                              'date', 'reseller', 'zipcode'])
         products = await get_content(page, first_zipcode)
         products_df = products_df._append(products)
-        create_csv(products_df, postfix, zipcode)
+        #create_csv(products_df, postfix, zipcode)
     
     await browse_page(startlink, page_logic)
 
