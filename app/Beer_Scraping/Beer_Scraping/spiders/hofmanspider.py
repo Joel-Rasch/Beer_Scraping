@@ -46,7 +46,7 @@ class BeerSpider(scrapy.Spider):
             parts = price.split('\xa0') if '\xa0' in price else price.split()
             beer_data['currency'] = parts[1]
             beer_data['price'] = float(parts[0].replace(',','.'))
-        beer_data['zipcode'] = response.css('div.product-attribute.product-attribute-logistikdetails').re_first(r'\d{5}\s|\d{4}\s')
+        beer_data['zipcode'] = '15831'
 
         amount_list = response.xpath('//div[@class="product-attribute product-attribute-m29"]/div/span/text()').re_first('\d+\w\d+\.\d+').split('x')
         beer_data['quantity'] = round(float(amount_list[0]) * float(amount_list[1]),2)
