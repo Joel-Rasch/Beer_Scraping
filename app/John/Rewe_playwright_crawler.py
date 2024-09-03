@@ -85,9 +85,9 @@ def parse_beer_info(page):
         unit_match = re.search(r'(\d+(?:,\d+)?)\s*(ml|l)\b', quantity_info) 
 
         if quantity_match is not None and unit_match is not None:
-            beer_info['quantity'] = float(unit_match.group(1).replace(',','.')) * float(quantity_match.group(1))
+            beer_info['quantity'] = round(float(unit_match.group(1).replace(',','.')) * float(quantity_match.group(1)),2)
         elif unit_match is not None:
-            beer_info['quantity'] = float(unit_match.group(1).replace(',','.'))
+            beer_info['quantity'] = round(float(unit_match.group(1).replace(',','.')),2)
 
         beer_info['unit'] = unit_match.group(2) if unit_match else None
     except:
