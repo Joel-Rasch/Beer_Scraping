@@ -73,7 +73,7 @@ def parse_beer_info(page):
 
     try:
         beer_info['name'] = page.query_selector('h1.keyfacts__title').inner_text()
-        beer_info['name'] = re.search(r"^[^\d\s]+(?:\s[^\d\s]+)*", beer_info['name'])
+        beer_info['name'] = re.search(r"^[^\d\s]+(?:\s[^\d\s]+)*", beer_info['name'])[0]
     except:
         print(f'Could not find name for {page.url}')
 
