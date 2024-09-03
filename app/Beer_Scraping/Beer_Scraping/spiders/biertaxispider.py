@@ -18,7 +18,7 @@ from Dbuploader import BeerDatabase
 
 class BeerSpider(scrapy.Spider):
     name = 'biertaxispider'
-    start_urls = ['https://www.durstrebellen.de/sortiment/Bier']
+    start_urls = ['https://www.biertaxi-duesseldorf.de/shop/:group_biere-flasche.2036']
 
     def __init__(self, *args, **kwargs):
         super(BeerSpider, self).__init__(*args, **kwargs)
