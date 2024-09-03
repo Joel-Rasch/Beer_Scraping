@@ -9,8 +9,11 @@ services:
       - DB_NAME=crawler_db
       - DB_USER=crawler_user
       - DB_PASSWORD=crawler_password
+      - DISPLAY=:99
     depends_on:
       - postgres
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
   
   postgres:
     image: postgres
