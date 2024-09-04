@@ -2,6 +2,7 @@ import scrapy
 from datetime import datetime
 import os
 import sys
+import re
 
 # Get the current directory of this file
 current_directory = os.path.dirname(os.path.realpath(__file__))
