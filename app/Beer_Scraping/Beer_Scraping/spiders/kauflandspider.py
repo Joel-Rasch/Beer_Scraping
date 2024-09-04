@@ -28,7 +28,7 @@ class BeerSpider(scrapy.Spider):
 
     def parse(self, response):
         products = response.css('section.product__data')
-        beer_data = {}
+        beer_data = []
 
         for product in products:
 
