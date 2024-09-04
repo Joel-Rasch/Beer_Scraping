@@ -18,33 +18,48 @@ from Dbuploader import BeerDatabase
 
 class BeerSpider(scrapy.Spider):
     name = 'edekaspider'
-    allowed_domains = 'edeka24.de'
-    start_urls = ['https://www.edeka24.de/Wein-Spirituosen/Bier']
+    allowed_domains = ['edeka24.de']
+    start_urls = ['https://www.edeka24.de/Wein-Spirituosen/Bier/']
 
     def __init__(self, *args, **kwargs):
         super(BeerSpider, self).__init__(*args, **kwargs)
         self.db = BeerDatabase(dbname='crawler_db', user='crawler_user', password='crawler_password')
-        self.site = 1
-
+    
+    
     def parse(self, response):
-        products = response.css('div.product-item')
-        beer_data = []
+        # Extract all product links on the initial page
+        products = response.css('div.product-details a::attr(href)').getall()
+        for link in products:
+            full_url = response.urljoin(link)
+            yield scrapy.Request(url=full_url, callback=self.parse_beer)
+    
+    def parse_beer(self, response):
+        # Extract product details from the product page
+        name = response.css('h1::text').get()
+        price_text = response.css('li.price-note::text').get()
 
-        for product in products:
+        if name:
+            name = name.strip()
+            # Search for a name pattern and make sure to get the first group correctly
+            name_search = re.search(r"^[^\d\s]+(?:\s[^\d\s]+)*", name)
+            if name_search:
+                name = name_search.group(0)
 
-            items = {
-                'name': product.css('a.title::attr(title)').get().strip(),
-                'quantity': '1',
-                'unit': 'L',
-                'price': product.css('p.price-note').get().replace('<p class="price-note">','').replace('zzgl. 0,25 € Pfand','').replace('</p>','').replace('zzgl. 1,00 € Pfand','').replace('€/l','').strip(),
-                'currency': '€',
-                'date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                'reseller': 'Edeka24.de',
-                'zipcode': '0000',
-                'alcohol_content': '0000'
-            }
-            items['name'] = re.search(r"^[^\d\s]+(?:\s[^\d\s]+)*", items['name'])[0]
-            beer_data.append(items)
+        if price_text:
+            price_search = re.search(r"\d+.\d+", price_text.replace(',', '.'))
+            price = price_search.group() if price_search else None
+
+        items = {
+            'name': name,
+            'quantity': '1',
+            'unit': 'L',
+            'price': price,
+            'currency': '€',
+            'date': datetime.now().strftime('%Y-%m-%d'),
+            'reseller': 'Edeka24.de',
+            'zipcode': '',
+            'alcohol_content': ''
+        }
 
 
         try:
@@ -53,4 +68,4 @@ class BeerSpider(scrapy.Spider):
         except Exception as e:
             self.logger.error(f"Error inserting data: {e}")
 
-        yield beer_data
+        yield items
