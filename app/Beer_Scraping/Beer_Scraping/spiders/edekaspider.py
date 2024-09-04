@@ -63,7 +63,7 @@ class BeerSpider(scrapy.Spider):
 
 
         try:
-            result = self.db.process_entries(beer_data)
+            result = self.db.process_entries(items)
             self.logger.info(f"Inserted data: {result}")
         except Exception as e:
             self.logger.error(f"Error inserting data: {e}")
