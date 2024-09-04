@@ -22,10 +22,11 @@ class BeerSpider(scrapy.Spider):
 
     def parse(self, response):
         products = response.css('div.product-item')
+        beer_data = {}
 
         for product in products:
 
-            yield {
+            items = {
                 'name': product.css('a.title::attr(title)').get().strip(),
                 'quantity': '1',
                 'unit': 'L',
@@ -35,11 +36,13 @@ class BeerSpider(scrapy.Spider):
                 'reseller': 'Edeka24.de',
                 'zipcode': '0000',
                 'alcohol_content': '0000'
-
             }
+            beer_data.append(items)
 
         try:
             result = self.db.process_entries(beer_data)
             self.logger.info(f"Inserted data: {result}")
         except Exception as e:
             self.logger.error(f"Error inserting data: {e}")
+
+        yield beer_data
