@@ -36,3 +36,9 @@ class BeerSpider(scrapy.Spider):
                 'zipcode': '0000',
                 'alcohol_contet': '0000'
             }
+
+        try:
+            result = self.db.process_entries(beer_data)
+            self.logger.info(f"Inserted data: {result}")
+        except Exception as e:
+            self.logger.error(f"Error inserting data: {e}")
