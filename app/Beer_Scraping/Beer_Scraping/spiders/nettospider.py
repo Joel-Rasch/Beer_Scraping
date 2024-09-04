@@ -20,12 +20,18 @@ class BeerSpider(scrapy.Spider):
     allowed_domains = 'netto-online.de'
     start_urls = ['https://www.netto-online.de/bier']
 
+    def __init__(self, *args, **kwargs):
+        super(BeerSpider, self).__init__(*args, **kwargs)
+        self.db = BeerDatabase(dbname='crawler_db', user='crawler_user', password='crawler_password')
+        self.site = 1
+
     def parse(self, response):
         products = response.css('li.product-list__item')
+        beer_data = {}
 
         for product in products:
 
-            yield {
+            items = {
                 'name': product.css('div.product__title').get().replace('<div class="product__title product__title__inner tc-product-name  line-clamp-2">','').replace('</div>','').strip(),
                 'quantity': '1',
                 'unit': 'L',
@@ -36,3 +42,14 @@ class BeerSpider(scrapy.Spider):
                 'zipcode': '0000',
                 'alcohol_contet': '0000'
             }
+            beer_data.append(items)
+
+        beer_data['name'] = re.search(r"^[^\d\s]+(?:\s[^\d\s]+)*",beer_data['name'])[0]
+
+        try:
+            result = self.db.process_entries(beer_data)
+            self.logger.info(f"Inserted data: {result}")
+        except Exception as e:
+            self.logger.error(f"Error inserting data: {e}")
+
+        yield beer_data

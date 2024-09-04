@@ -28,15 +28,15 @@ CREATE TABLE Prices (
 CREATE TABLE Resellers (  
     reseller_id SERIAL PRIMARY KEY,  
     reseller_name VARCHAR(255) NOT NULL,  
-    zipcode VARCHAR(20)  
+    zipcode VARCHAR(20),  
     UNIQUE (reseller_name, zipcode) 
 );
 
 CREATE TABLE Format_Resellers ( 
-format_reseller_id SERIAL PRIMARY KEY, 
-format_id INT, reseller_id INT, 
-FOREIGN KEY (format_id) REFERENCES Formats(format_id), 
-FOREIGN KEY (reseller_id) REFERENCES Resellers(reseller_id) 
+    format_reseller_id SERIAL PRIMARY KEY, 
+    format_id INT, reseller_id INT, 
+    FOREIGN KEY (format_id) REFERENCES Formats(format_id), 
+    FOREIGN KEY (reseller_id) REFERENCES Resellers(reseller_id) 
 );
 
 -- Create a view for beer analysis
