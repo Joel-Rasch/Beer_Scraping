@@ -43,8 +43,9 @@ class BeerSpider(scrapy.Spider):
                 'zipcode': '0000',
                 'alcohol_content': '0000'
             }
-            beer_data.append(items)
             items['name'] = re.search(r"^[^\d\s]+(?:\s[^\d\s]+)*", items['name'])[0]
+            beer_data.append(items)
+
 
         try:
             result = self.db.process_entries(beer_data)
