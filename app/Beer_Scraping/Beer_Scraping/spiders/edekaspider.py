@@ -20,6 +20,11 @@ class BeerSpider(scrapy.Spider):
     allowed_domains = 'edeka24.de'
     start_urls = ['https://www.edeka24.de/Wein-Spirituosen/Bier']
 
+    def __init__(self, *args, **kwargs):
+        super(BeerSpider, self).__init__(*args, **kwargs)
+        self.db = BeerDatabase(dbname='crawler_db', user='crawler_user', password='crawler_password')
+        self.site = 1
+
     def parse(self, response):
         products = response.css('div.product-item')
         beer_data = {}
@@ -38,6 +43,8 @@ class BeerSpider(scrapy.Spider):
                 'alcohol_content': '0000'
             }
             beer_data.append(items)
+
+        beer_data['name'] = re.search(r"^[^\d\s]+(?:\s[^\d\s]+)*",beer_data['name'])[0]
 
         try:
             result = self.db.process_entries(beer_data)
