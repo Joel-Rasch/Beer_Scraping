@@ -49,7 +49,7 @@ class BeerSpider(scrapy.Spider):
         if price_text is not None:
             # Replace commas with dots for decimal consistency and search for the price
             price_search = re.search(r"\d+\.\d+", price_text)
-            price = price_search.group() if price_search else None
+            price = price_search.group().replace(',','.') if price_search else None
         else:
             price = None
 
