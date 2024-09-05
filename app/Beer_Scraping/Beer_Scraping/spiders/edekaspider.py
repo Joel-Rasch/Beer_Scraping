@@ -35,6 +35,7 @@ class BeerSpider(scrapy.Spider):
     
     def parse_beer(self, response):
         # Extract product details from the product page
+        items = {}
         name = response.css('h1::text').get()
         price_text = response.css('li.price-note::text').get()
 
@@ -49,18 +50,19 @@ class BeerSpider(scrapy.Spider):
             price_search = re.search(r"\d+.\d+", price_text.replace(',', '.'))
             price = price_search.group() if price_search else None
 
-        items = {
-            'name': name,
-            'quantity': '1',
-            'unit': 'L',
-            'price': price,
-            'currency': '€',
-            'date': datetime.now().strftime('%Y-%m-%d'),
-            'reseller': 'Edeka24.de',
-            'zipcode': '',
-            'alcohol_content': ''
-        }
-
+        
+        items['name'] = name
+        items['quantity'] = '1'
+        items['unit'] = 'L'
+        items['price'] = price
+        items['currency'] = '€'
+        items['date'] = datetime.now().strftime('%Y-%m-%d')
+        items['reseller'] = 'Edeka24.de'
+        items['zipcode'] = ''
+        
+        alcohol_content = response.xpath('//strong[contains(text(), "Alkoholgehalt:")]/following-sibling::text()').re_first(r'\b\d+\.\d+%')
+        items['alcohol_content'] = alcohol_content
+        
 
         try:
             result = self.db.process_entries(items)

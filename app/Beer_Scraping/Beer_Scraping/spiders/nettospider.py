@@ -63,10 +63,11 @@ class BeerSpider(scrapy.Spider):
         items['reseller'] = 'Netto Online'
         items['quantity'] = '1'
         items['unit'] = 'L'
+        items['currency'] = '€'
         items['zipcode'] = ''
         
         #alcohol content
-        alcohol_content = response.css('div.food-labeling__text p::text').re_first(r'Alkoholgehalt: (\d+,\d+) %')
+        alcohol_content = response.css('div.food-labeling__text p::text').re_first(r'Alkoholgehalt: (\d+,\d+ %)')
         items['alcohol_content'] = alcohol_content
 
         try:
