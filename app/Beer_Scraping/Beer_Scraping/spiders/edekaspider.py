@@ -46,9 +46,12 @@ class BeerSpider(scrapy.Spider):
             if name_search:
                 name = name_search.group(0)
 
-        if price_text:
-            price_search = re.search(r"\d+.\d+", price_text.replace(',', '.'))
+        if price_text is not None:
+            # Replace commas with dots for decimal consistency and search for the price
+            price_search = re.search(r"\d+\.\d+", price_text)
             price = price_search.group() if price_search else None
+        else:
+            price = None
 
         
         items['name'] = name
@@ -61,7 +64,11 @@ class BeerSpider(scrapy.Spider):
         items['zipcode'] = ''
         
         alcohol_content = response.xpath('//strong[contains(text(), "Alkoholgehalt:")]/following-sibling::text()').re_first(r'\b\d+\.\d+%')
-        items['alcohol_content'] = alcohol_content
+
+        if alcohol_content is not None and '%' in alcohol_content:
+            alcohol_content = alcohol_content.replace('%', '').replace(',','.')
+
+        items['alcohol_content'] = str(alcohol_content) if alcohol_content is not None else ''
         
 
         try:

@@ -49,17 +49,23 @@ class BeerSpider(scrapy.Spider):
         
         items['name'] = name
         
-        #Price
-        base_price_1 = response.css('.product-property__base-price .product-property__value::text').get()
-        base_price_2 = response.css('span.product__current-price--digits-after-comma::text').get()
-        price_text = (f'{base_price_1}{base_price_2}')
-        
-        if price_text:
-            price_search = re.search(r"\d+.\d+", price_text.replace(',', '.'))
+        # Extract price parts
+        base_price_1 = response.css('.product-property__base-price .product-property__value::text').get(default='')
+        base_price_2 = response.css('span.product__current-price--digits-after-comma::text').get(default='')
+
+        # Concatenate and clean price text
+        price_text = f'{base_price_1}{base_price_2}'
+
+        # Check if price_text is not empty before processing
+        if price_text is not None:
+            # Replace commas with dots for decimal consistency and search for the price
+            price_search = re.search(r"\d+\.\d+", price_text)
             price = price_search.group() if price_search else None
+        else:
+            price = None
         
         items['price'] = price
-        items['date'] = datetime.now()
+        items['date'] = datetime.now().strftime('%Y-%m-%d')
         items['reseller'] = 'Netto Online'
         items['quantity'] = '1'
         items['unit'] = 'L'
@@ -68,7 +74,12 @@ class BeerSpider(scrapy.Spider):
         
         #alcohol content
         alcohol_content = response.css('div.food-labeling__text p::text').re_first(r'Alkoholgehalt: (\d+,\d+ %)')
-        items['alcohol_content'] = alcohol_content
+        
+        if alcohol_content is not None and '%' in alcohol_content:
+            alcohol_content = alcohol_content.replace('%', '').replace(',','.')
+        
+        items['alcohol_content'] = str(alcohol_content) if alcohol_content is not None else ''
+        
 
         try:
             result = self.db.process_entries(items)

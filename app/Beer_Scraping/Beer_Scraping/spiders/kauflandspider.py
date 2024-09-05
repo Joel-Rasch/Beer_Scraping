@@ -45,10 +45,10 @@ class BeerSpider(scrapy.Spider):
             }
             items['name'] = re.search(r"^[^\d\s]+(?:\s[^\d\s]+)*", items['name'])[0]
 
-        try:
-            result = self.db.process_entries(beer_data)
-            self.logger.info(f"Inserted data: {result}")
-        except Exception as e:
-            self.logger.error(f"Error inserting data: {e}")
+        #try:
+            #result = self.db.process_entries(beer_data)
+            #self.logger.info(f"Inserted data: {result}")
+        #except Exception as e:
+            #self.logger.error(f"Error inserting data: {e}")
 
         yield beer_data
