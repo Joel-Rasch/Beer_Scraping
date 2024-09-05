@@ -16,40 +16,63 @@ sys.path.append(parent_directory)
 # Import the BeerDatabase class
 from Dbuploader import BeerDatabase
 
+
 class BeerSpider(scrapy.Spider):
     name = 'nettospider'
-    allowed_domains = 'netto-online.de'
-    start_urls = ['https://www.netto-online.de/bier']
+    allowed_domains = ['netto-online.de']
+    start_urls = ['https://www.netto-online.de/bier/']
 
     def __init__(self, *args, **kwargs):
         super(BeerSpider, self).__init__(*args, **kwargs)
         self.db = BeerDatabase(dbname='crawler_db', user='crawler_user', password='crawler_password')
-        self.site = 1
 
     def parse(self, response):
-        products = response.css('li.product-list__item')
-        beer_data = []
+        # Extract all product links on the initial page
+        products = response.css('ul.product-list a::attr(href)').getall()
+        for link in products:
+            full_url = response.urljoin(link)
+            yield scrapy.Request(url=full_url, callback=self.parse_beer)
 
-        for product in products:
-
-            items = {
-                'name': product.css('div.product__title').get().replace('<div class="product__title product__title__inner tc-product-name  line-clamp-2">','').replace('</div>','').strip(),
-                'quantity': '1',
-                'unit': 'L',
-                'price': product.css('span.product-property__base-price').get().replace('<span class="product-property product-property__base-price">','').replace('<span class="product__current-price--digits-after-comma">','').replace('</span> / l</span>','').replace('– / l</span>','0').strip(),
-                'currency': '€',
-                'date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                'reseller': 'netto-online.de',
-                'zipcode': '0000',
-                'alcohol_contet': '0000'
-            }
-            items['name'] = re.search(r"^[^\d\s]+(?:\s[^\d\s]+)*", items['name'])[0]
-            beer_data.append(items)
+    def parse_beer(self, response):
+        # Extract product details from the product page
+        items = {}
+        
+        #Name
+        name = response.xpath('//h1/text()').get()
+        
+        if name:
+            name = name.strip()
+            # Search for a name pattern and make sure to get the first group correctly
+            name_search = re.search(r"^[^\d\s]+(?:\s[^\d\s]+)*", name)
+            if name_search:
+                name = name_search.group(0)
+        
+        items['name'] = name
+        
+        #Price
+        base_price_1 = response.css('.product-property__base-price .product-property__value::text').get()
+        base_price_2 = response.css('span.product__current-price--digits-after-comma::text').get()
+        price_text = (f'{base_price_1}{base_price_2}')
+        
+        if price_text:
+            price_search = re.search(r"\d+.\d+", price_text.replace(',', '.'))
+            price = price_search.group() if price_search else None
+        
+        items['price'] = price
+        items['date'] = datetime.now()
+        items['reseller'] = 'Netto Online'
+        items['quantity'] = '1'
+        items['unit'] = 'L'
+        items['zipcode'] = ''
+        
+        #alcohol content
+        alcohol_content = response.css('div.food-labeling__text p::text').re_first(r'Alkoholgehalt: (\d+,\d+) %')
+        items['alcohol_content'] = alcohol_content
 
         try:
-            result = self.db.process_entries(beer_data)
+            result = self.db.process_entries(items)
             self.logger.info(f"Inserted data: {result}")
         except Exception as e:
             self.logger.error(f"Error inserting data: {e}")
 
-        yield beer_data
+        yield items
