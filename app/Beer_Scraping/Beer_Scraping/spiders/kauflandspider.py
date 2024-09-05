@@ -71,7 +71,7 @@ class BeerSpider(scrapy.Spider):
         
         if price_text is not None:
             price_search = re.search(r"\d+.\d+", price_text)
-            price = price_search.group().replace(',','.') if price_search else None
+            price = price_search.group().replace(',','.') if price_search else ''
         else:
             price = ''
         
@@ -86,7 +86,7 @@ class BeerSpider(scrapy.Spider):
         
 
         try:
-            result = self.db.process_entries(beer_data)
+            result = self.db.process_entries(items)
             self.logger.info(f"Inserted data: {result}")
         except Exception as e:
             self.logger.error(f"Error inserting data: {e}")
