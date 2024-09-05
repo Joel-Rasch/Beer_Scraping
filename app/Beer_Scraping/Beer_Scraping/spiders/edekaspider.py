@@ -3,6 +3,7 @@ from datetime import datetime
 import os
 import sys
 import re
+import logging
 
 # Get the current directory of this file
 current_directory = os.path.dirname(os.path.realpath(__file__))
@@ -46,12 +47,19 @@ class BeerSpider(scrapy.Spider):
             if name_search:
                 name = name_search.group(0)
 
-        if price_text is not None:
-            # Replace commas with dots for decimal consistency and search for the price
-            price_search = re.search(r"\d+\.\d+", price_text)
-            price = price_search.group().replace(',','.')
-        else:
-            price = ''
+        try:
+            # Beispiel für das Extrahieren eines Preises mit einem regulären Ausdruck
+            price_text = re.search(r'\d+,\d+', response.text)  # Beispiel: Suchmuster
+            if price_text:
+                price = price_text.group().replace(',', '.')
+                # Weiterverarbeitung des Preises
+            else:
+                # Falls kein Preis gefunden wird, logge eine Warnung
+                logging.warning(f"No price found on {response.url}")
+                # Optional: Setze den Preis auf einen Standardwert oder überspringe die Verarbeitung
+                price = ''
+        except Exception as e:
+            logging.error(f"Error processing {response.url}: {e}")
 
         
         items['name'] = name
@@ -65,10 +73,7 @@ class BeerSpider(scrapy.Spider):
         
         alcohol_content = response.xpath('//strong[contains(text(), "Alkoholgehalt:")]/following-sibling::text()').re_first(r'\b\d+\.\d+%')
 
-        if alcohol_content is not None and '%' in alcohol_content:
-            alcohol_content = alcohol_content.replace('%', '').replace(',','.')
-
-        items['alcohol_content'] = str(alcohol_content) if alcohol_content is not None else ''
+        items['alcohol_content'] = str(alcohol_content).replace('%', '').replace(',','.') if alcohol_content is not None else ''
         
 
         try:
