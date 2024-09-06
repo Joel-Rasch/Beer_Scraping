@@ -72,9 +72,9 @@ class BeerSpider(scrapy.Spider):
         
         if price_text is not None:
             price_search = re.search(r"\d+.\d+", price_text)
-            price = price_search.group().replace(',','.') if price_search else ''
+            price = price_search.group().replace(',','.') if price_search else None
         else:
-            price = ''
+            price = None
         
         items['price'] = price
         
@@ -83,7 +83,7 @@ class BeerSpider(scrapy.Spider):
         items['date'] = datetime.now().strftime('%Y-%m-%d')
         items['reseller'] = 'Kaufland'
         items['zipcode'] = ''
-        items['alcohol_contet'] = ''
+        items['alcohol_contet'] = None
         
 
         try:
