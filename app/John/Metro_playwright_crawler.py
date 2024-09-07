@@ -88,8 +88,8 @@ def parse_beer_info(page, reseller, zipcode):
         print(f'Could not find price for {page.url}')
 
     try:
-        count = re.search(r'(\d+)\s*(?:x|×)\s*', beer_info['name'])
-        amount_with_unit = re.search(r'(\d+(?:[.,]\d+)?)\s*(ml|l)\b', beer_info['name'])
+        count = re.search(r'(\d+)\s*(?:x|×)\s*', page.locator('//h2').inner_text())
+        amount_with_unit = re.search(r'(\d+(?:[.,]\d+)?)\s*(ml|l)\b', page.locator('//h2').inner_text())
         if count and amount_with_unit:
             beer_info['quantity'] = round(float(amount_with_unit.group(1).replace(',', '.')) * float(count.group(1)), 2)
         elif amount_with_unit:
