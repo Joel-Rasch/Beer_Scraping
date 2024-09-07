@@ -78,7 +78,7 @@ class BeerSpider(scrapy.Spider):
         if alcohol_content is not None and '%' in alcohol_content:
             alcohol_content = alcohol_content.replace('%', '').replace(',','.')
         
-        items['alcohol_content'] = str(alcohol_content) if alcohol_content is not None else ''
+        items['alcohol_content'] = float(alcohol_content) if alcohol_content is not None else ''
         
 
         try:
