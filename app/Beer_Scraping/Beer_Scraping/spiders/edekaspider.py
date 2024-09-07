@@ -73,8 +73,10 @@ class BeerSpider(scrapy.Spider):
         
         alcohol_content = response.xpath('//strong[contains(text(), "Alkoholgehalt:")]/following-sibling::text()').re_first(r'\b\d+\.\d+%')
 
-        alcohol_content = str(alcohol_content).replace('%', '').replace(',','.') if alcohol_content is not None else None
-        items['alcohol_content'] = float(alcohol_content)
+        alcohol_content = alcohol_content.replace('%', '').replace(',','.') if alcohol_content is not None else None
+        alcohol_content = float(alcohol_content) if alcohol_content is not None else None
+        
+        items['alcohol_content'] = alcohol_content
 
         try:
             result = self.db.process_entries(items)

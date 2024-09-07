@@ -67,7 +67,7 @@ class BeerSpider(scrapy.Spider):
         items['price'] = float(price)
         items['date'] = datetime.now().strftime('%Y-%m-%d')
         items['reseller'] = 'Netto Online'
-        items['quantity'] = int(1)
+        items['quantity'] = 1
         items['unit'] = 'L'
         items['currency'] = '€'
         items['zipcode'] = ''
@@ -78,7 +78,7 @@ class BeerSpider(scrapy.Spider):
         if alcohol_content is not None and '%' in alcohol_content:
             alcohol_content = alcohol_content.replace('%', '').replace(',','.')
         
-        items['alcohol_content'] = float(alcohol_content) if alcohol_content is not None else ''
+        items['alcohol_content'] = float(alcohol_content) if alcohol_content is not None else None
         
 
         try:

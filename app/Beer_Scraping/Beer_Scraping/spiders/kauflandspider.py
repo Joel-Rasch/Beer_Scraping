@@ -34,7 +34,7 @@ class BeerSpider(scrapy.Spider):
     
     def __init__(self, *args, **kwargs):
         super(BeerSpider, self).__init__(*args, **kwargs)
-        self.db = BeerDatabase(dbname='crawler_db', user='crawler_user', password='crawler_password', host='localhost')
+        self.db = BeerDatabase(dbname='crawler_db', user='crawler_user', password='crawler_password')
         self.site = 1
 
     def parse(self, response):
@@ -65,7 +65,7 @@ class BeerSpider(scrapy.Spider):
         else:
             items['name'] = 'Unknown'
         
-        items['quantitiy'] = int(1)
+        items['quantity'] = 1
         items['unit'] = 'L'
         
         price_text = response.css('span.rd-price-information__price::text').get().strip()
@@ -83,7 +83,7 @@ class BeerSpider(scrapy.Spider):
         items['date'] = datetime.now().strftime('%Y-%m-%d')
         items['reseller'] = 'Kaufland'
         items['zipcode'] = ''
-        items['alcohol_content'] = float()
+        items['alcohol_content'] = None
 
         
 
