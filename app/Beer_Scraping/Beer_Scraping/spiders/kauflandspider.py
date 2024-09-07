@@ -2,6 +2,8 @@ import scrapy
 from datetime import datetime
 import os
 import sys
+import re
+import logging
 
 # Get the current directory of this file
 current_directory = os.path.dirname(os.path.realpath(__file__))
@@ -18,38 +20,77 @@ from Dbuploader import BeerDatabase
 class BeerSpider(scrapy.Spider):
     name = "kauflandspider"
     allowed_domains = ["kaufland.de"]
-    start_urls = ["https://www.kaufland.de/bier"]
-
+    start_urls = ["https://www.kaufland.de/category/2551/p1"]
+    
+    custom_settings = {
+        'DOWNLOAD_DELAY': 5.0,  # Sekunden zwischen den Anfragen
+        'LOG_LEVEL': 'DEBUG',    # Setzt das Log-Level
+        'AUTOTHROTTLE_ENABLED': True,
+        'AUTOTHROTTLE_START_DELAY': 5.0,
+        'AUTOTHROTTLE_MAX_DELAY': 60.0,
+        'AUTOTHROTTLE_TARGET_CONCURRENCY': 1.0,
+        'AUTOTHROTTLE_DEBUG': True
+    }
+    
     def __init__(self, *args, **kwargs):
         super(BeerSpider, self).__init__(*args, **kwargs)
-        self.db = BeerDatabase(dbname='crawler_db', user='crawler_user', password='crawler_password')
+        self.db = BeerDatabase(dbname='crawler_db', user='crawler_user', password='crawler_password', host='localhost')
         self.site = 1
 
     def parse(self, response):
-        products = response.css('section.product__data')
-        beer_data = {}
+        # Extract all product links on the initial page
+        products = response.css('div.results.results--grid a::attr(href)').getall()
+        
+        for link in products:
+            full_url = response.urljoin(link)
+            yield scrapy.Request(url=full_url, callback=self.parse_beer)
+            logging.debug(f"Product URL: {full_url}")
+        
+        if not response.css('div.message-info.empty').get():
+            if self.site < 10:
+                self.site += 1
+                next_page_url = f"https://www.kaufland.de/category/2551/p{self.site}"
+                yield scrapy.Request(url=next_page_url, callback=self.parse)
+                logging.debug(f"Next Page URL: {next_page_url}")
+    
+    def parse_beer(self, response):
+        # Beispiel, wie man Artikelinformationen extrahiert
+        items = {}
+        
+        #Name
+        raw_name = response.css('div.above-the-fold__title-container h1::attr(title)').get()
+        name_match = re.search(r"^[^\d\s]+(?:\s[^\d\s]+)*", raw_name)
+        if name_match:
+            items['name'] = name_match.group(0)  # Verwende .group(0) statt [0] für Klarheit
+        else:
+            items['name'] = 'Unknown'
+        
+        items['quantitiy'] = int(1)
+        items['unit'] = 'L'
+        
+        price_text = response.css('span.rd-price-information__price::text').get().strip()
+        
+        if price_text is not None:
+            price_search = re.search(r"\d+.\d+", price_text)
+            price = price_search.group().replace(',','.') if price_search else None
+        else:
+            price = None
+        
+        items['price'] = price
+        
+        items['currency'] = '€'
+        
+        items['date'] = datetime.now().strftime('%Y-%m-%d')
+        items['reseller'] = 'Kaufland'
+        items['zipcode'] = ''
+        items['alcohol_content'] = float()
 
-        for product in products:
-
-            items = {
-                'name': product.css('div.product__title').get().replace('<div class="product__title">','').replace('</div>','').strip(),
-                'quantity': '1',
-                'unit': 'L',
-                'price': product.css('div.product__base-price').get().replace('<div class="product__base-price">','').replace('<span>','').replace('1l = ','').replace(' €','').replace('</span></div>','').strip(),
-                'currency': '€',
-                'date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                'reseller': product.css('strong.product__seller-info-name').get().replace('<strong class="product__seller-info-name">','').replace('</strong>','').replace('            ','').replace('/n','').strip(),
-                'zipcode': '0000',
-                'alcohol_contet': '0000'
-            }
-            beer_data.append(items)
-
-        beer_data['name'] = re.search(r"^[^\d\s]+(?:\s[^\d\s]+)*",beer_data['name'])[0]
+        
 
         try:
-            result = self.db.process_entries(beer_data)
+            result = self.db.process_entries(items)
             self.logger.info(f"Inserted data: {result}")
         except Exception as e:
             self.logger.error(f"Error inserting data: {e}")
 
-        yield beer_data
+        yield items
