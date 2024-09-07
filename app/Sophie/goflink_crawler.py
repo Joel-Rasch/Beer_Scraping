@@ -1,5 +1,5 @@
 import asyncio
-from datetime import date
+from datetime import datetime
 import pandas
 from playwright.async_api import async_playwright
 import re
@@ -45,7 +45,7 @@ async def browse_page(link, logic_fn):
 def split_price(price):
     price = price.split()
     currency = price[1]
-    price = price[0]
+    price = price[0].replace(",", ".")
     return currency, price
 
 def correct_name(name):
@@ -57,21 +57,39 @@ def correct_name(name):
 
 
 def parse_product_string(product_string):
-    # Preperatiom to replace missing l if needed
+    # Preperation to replace missing 'l' if needed
     product_string = re.sub(r"(\d+(?:,\d+)?)(\s*MW|\s*$)", r"\1l\2", product_string)
-    
-    # Regular expression to parse product string
-    pattern = r"^(.*?)\s((?:\d+x)?\d+(?:,\d+)?)([a-zA-Z]+)"
 
+    # Regular expression to parse product string
+    pattern = r"^(.*?)(\d+x)?(\d+(?:,\d+)?)([a-zA-Z]+)"
     match = re.search(pattern, product_string)
 
     if match:
-        name = match.group(1).strip()
-        quantity = match.group(2)
-        unit = match.group(3)
-        return name, quantity, unit
+        name = match.group(1).strip()  # Produktname
+        multiplier = match.group(2)    # Zahl vor 'x', wenn vorhanden
+        quantity = match.group(3).replace(",", ".")  # Zahl nach 'x'
+        unit = match.group(4)  # Einheit
+
+        if multiplier:  # Wenn ein 'x' und ein Multiplikator vorhanden sind
+            multiplier = int(multiplier[:-1])  # Entferne das 'x' und konvertiere zu int
+            quantity = float(quantity) * multiplier
+
+        return name, float(quantity), unit
     else:
-        return product_string, None, None
+        return product_string, float(0.0) , "k.A."
+
+def create_csv(dataframe):
+    dataframe.to_csv(f"./Export/flink_exports/flink_{datetime.now().strftime('%Y-%m-%d')}.csv", index=False)
+    print("CSV created")	
+
+def write_to_db(entry):
+    db = BeerDatabase(dbname='crawler_db', user='crawler_user', password='crawler_password', host='postgres',
+                      port='5432')
+    try:
+        result = db.process_entries(entry)
+        print(f"Inserted data: {result}")
+    except Exception as e:
+        print(f"Error inserting data: {e}")
 
 async def get_content(page):
     # Dictionary for current product data
@@ -90,9 +108,9 @@ async def get_content(page):
         beer, quantity, unit = parse_product_string(name)
         price = await product.locator('.price-tag').inner_text()
         currency, price = split_price(price)
-        current_date = date.today().strftime("%d/%m/%Y")
+        current_date = datetime.now().strftime('%Y-%m-%d')
         reseller = "Flink"
-        zipcode = ""
+        zipcode = "Hamburg"
 
         # Current product data
         beer_data =  {'name': name,
@@ -100,6 +118,7 @@ async def get_content(page):
                'unit': unit,
                'price': price,
                'currency': currency,
+               'alcohol_content': None,
                'date': current_date,
                'reseller': reseller,
                'zipcode': zipcode}
@@ -111,18 +130,8 @@ async def get_content(page):
         dataframe = dataframe._append({'name': beer, 'quantity': quantity, 'unit': unit, 'price': price, 'currency': currency, 'date': current_date, 'reseller': reseller, 'zipcode': zipcode}, ignore_index=True)
     return dataframe
 
-def create_csv(dataframe):
-    dataframe.to_csv(f"./Export/flink_exports/flink_{date.today().strftime('%Y%m%d')}.csv", index=False)
-    print("CSV created")	
 
-def write_to_db(entry):
-    try:
-        result = BeerDatabase.process_entries(entry)
-        print(f"Inserted data: {result}")
-    except Exception as e:
-        print(f"Error inserting data: {e}")
-
-async def main(args):
+async def main():
     link = "https://www.goflink.com/de-DE/shop"
     async def page_logic(page):
         products = await get_content(page)          
