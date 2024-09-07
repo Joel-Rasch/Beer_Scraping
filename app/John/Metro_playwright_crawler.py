@@ -74,7 +74,7 @@ def parse_beer_info(page, reseller, zipcode):
     }
 
     try:
-        beer_info['name'] = page.locator('//h2').inner_text()
+        beer_info['name'] = re.split(r'\d+(?:[.,]\d+)?\s*(ml|l)|(\d+\s*x\s*\d+(?:[.,]\d+)?\s*(ml|l)).*$', page.locator('//h2').inner_text(), flags=re.IGNORECASE)[0].strip('- ')
     except:
         print(f'Could not find name for {page.url}')
 
@@ -91,9 +91,9 @@ def parse_beer_info(page, reseller, zipcode):
         count = re.search(r'(\d+)\s*(?:x|×)\s*', beer_info['name'])
         amount_with_unit = re.search(r'(\d+(?:[.,]\d+)?)\s*(ml|l)\b', beer_info['name'])
         if count and amount_with_unit:
-            beer_info['quantity'] = float(amount_with_unit.group(1).replace(',', '.')) * float(count.group(1))
+            beer_info['quantity'] = round(float(amount_with_unit.group(1).replace(',', '.')) * float(count.group(1)), 2)
         elif amount_with_unit:
-            beer_info['quantity'] = float(amount_with_unit.group(1).replace(',', '.'))
+            beer_info['quantity'] = round(float(amount_with_unit.group(1).replace(',', '.')), 2)
 
         beer_info['unit'] = amount_with_unit.group(2) if amount_with_unit else None
     except:
@@ -135,21 +135,26 @@ def run(output='database', db=None, csv_filename='metro_beer_data.csv'):
                                                        headless=True, slow_mo=100,
                                                        args=['--disable-blink-features=AutomationControlled'])
         page = browser.new_page()
-
+        reseller = 'Metro'  
         try:
             page.goto('https://produkte.metro.de/shop/category/food/alkoholische-getr%C3%A4nke/bier',
                       wait_until='networkidle')
-            # page.click('text="Alle akzeptieren"')
+            print('Metro Crawler - Starting to scrape Metro website')
+            if page.locator('text="Alle akzeptieren"').is_visible():
+                page.click('text="Alle akzeptieren"')
             page.click('text="Ausgewählter Markt"')
             page.locator('div.css-1hwfws3.Select__value-container').click()
             elements = page.locator('.Select__menu .Select__option')
-            for element in elements.all()[3:5]:
+            for element in elements.all()[:20]:
                 element.click()
                 page.locator('div.css-1hwfws3.Select__value-container').click()
-                reseller = element.inner_text()
-                zipcode_text = page.locator('div.brandbar-popover-store-address').inner_text()
-                zipcode = re.search(r'\d{5}', zipcode_text).group()
+                #reseller = element.inner_text()
                 page.click('text="Markt auswählen"')
+                time.sleep(random.uniform(1, 2))
+                page.click('text="Ausgewählter Markt"')
+                zipcode_text = page.locator('div.brandbar-popover-store-address').inner_text()
+                page.click('text="Ausgewählter Markt"')
+                zipcode = re.search(r'\d{5}', zipcode_text).group()
                 links = scroll_and_wait(page, scroll_count=10, delay=0.001)
                 unique_links = list(set(links))
 
