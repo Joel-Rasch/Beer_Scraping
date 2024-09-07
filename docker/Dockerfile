@@ -63,16 +63,15 @@ COPY app/ /app/
 # Umgebungsvariable für Display setzen
 ENV DISPLAY=:99
 
-# Entrypoint-Skript
 RUN echo '#!/bin/bash\n\
 Xvfb :99 -screen 0 1024x768x16 &\n\
+export DISPLAY=:99\n\
+sleep 2\n\
 python /app/John/Metro_playwright_crawler.py \n\
-Xvfb :99 -screen 0 1024x768x16 &\n\
 python /app/John/Lidl_playwright_crawler.py \n\
-Xvfb :99 -screen 0 1024x768x16 &\n\
 python /app/Sophie/flaschenpost_crawler.py \n\
-Xvfb :99 -screen 0 1024x768x16 &\n\
 python /app/Sophie/goflink_crawler.py \n\
+python /app/John/Rewe_playwright_crawler.py \n\
 cd /app/Beer_Scraping && scrapy crawl banachspider \n\
 cd /app/Beer_Scraping && scrapy crawl product_links \n\
 cd /app/Beer_Scraping && scrapy crawl edekaspider \n\
@@ -80,8 +79,6 @@ cd /app/Beer_Scraping && scrapy crawl hofmanspider \n\
 cd /app/Beer_Scraping && scrapy crawl kauflandspider \n\
 cd /app/Beer_Scraping && scrapy crawl nettospider \n\
 cd /app/Beer_Scraping && scrapy crawl biertaxispider \n\
-Xvfb :99 -screen 0 1024x768x16 &\n\
-python /app/John/Rewe_playwright_crawler.py \n\
 ' > /entrypoint.sh && chmod +x /entrypoint.sh
 
 # Entrypoint-Skript
