@@ -25,8 +25,6 @@ def extract_links(page):
 
 def simulate_human_behavior(page):
     time.sleep(random.uniform(0.1, 0.4))
-    scroll_amount = random.randint(100, 500)
-    page.evaluate(f'window.scrollBy(0, {scroll_amount})')
     for _ in range(random.randint(3, 5)):
         x = random.randint(0, page.viewport_size['width'])
         y = random.randint(0, page.viewport_size['height'])
@@ -46,8 +44,7 @@ def simulate_human_behavior(page):
 
 
 def scroll_and_wait(page, scroll_count=10, delay=1):
-    last_height = page.evaluate('document.body.scrollHeight')
-    scroll_distance = last_height // (scroll_count - 1)
+    scroll_distance = 500
     links = []
     while True:
         for i in range(scroll_count):
@@ -73,7 +70,7 @@ def parse_beer_info(page):
     }
 
     try:
-        beer_info['name'] = page.locator('h1.pdpr-Title').inner_text()
+        beer_info['name'] =  re.split(r'\d+(?:[.,]\d+)?\s*(ml|l)|(\d+\s*x\s*\d+(?:[.,]\d+)?\s*(ml|l)).*$', page.locator('h1.pdpr-Title').inner_text(), flags=re.IGNORECASE)[0].strip('- ')
     except:
         print(f'Could not find name for {page.url}')
 
@@ -153,34 +150,45 @@ def run(output='database', db=None, csv_filename='beer_data.csv'):
 
         first = True
         reseller = 'Rewe'
-        zip_codes = ['25436', '22089']
-
+        zip_codes = [
+    '86156', '13599', '10243', '12277', '38122', '28201', '85649', '09247', '44145', '44149', 
+    '01139', '47059', '40235', '99099', '45329', '25436', '22089']
         if output == 'csv':
             save_to_csv({}, csv_filename, write_header=True)
 
-        for zip_code in zip_codes:
+        for zip_code in zip_codes[:22]:
             links = []
             page.goto('https://shop.rewe.de/c/bier-biermischgetraenke/', wait_until='load')
             page.wait_for_load_state('load')
-            time.sleep(random.uniform(3, 4))
+            time.sleep(random.uniform(2, 3))
             simulate_human_behavior(page)
             if page.get_by_test_id('uc-accept-all-button').is_visible():
                 page.get_by_test_id('uc-accept-all-button').click()
             if first:
+                first = False
                 delivery_type = page.get_by_test_id('gbmc-highlightable-button').nth(1)
                 delivery_type.click(force=True)
-                page.fill('input.gbmc-zipcode-input.gbmc-undecided.svelte-1wkkum2', zip_code, force=True)
-                first = False
+                page.fill('input.gbmc-zipcode-input.gbmc-undecided.svelte-1wkkum2', zip_code)   
             else:
-                change_button = page.locator('button.gbmc-trigger.gbmc-qa-trigger:has-text("ändern")')
-                change_button.click()
-                change_zip_code = page.locator('a.gbmc-change-zipcode-link.svelte-yhv3au')
+                if page.locator('button.gbmc-trigger.gbmc-qa-trigger:has-text("ändern")').is_visible():
+                    change_button = page.locator('button.gbmc-trigger.gbmc-qa-trigger:has-text("ändern")')
+                    change_button.click()
+                change_zip_code = page.get_by_test_id('gbmc-change-zipcode-link')
                 change_zip_code.click()
+                if not page.locator('input.gbmc-zipcode-input.gbmc-undecided.svelte-1wkkum2').is_visible():
+                    print('Zip code input not visible')
+                    continue
+                    
                 page.fill('input.gbmc-zipcode-input.gbmc-undecided.svelte-1wkkum2', zip_code)
-                delivery_type = page.locator('button.gbmc-qa-delivery-trigger.svelte-1uef6g3.gbmc-wide')
-                delivery_type.click()
-            time.sleep(random.uniform(2, 4))
-            links = scroll_and_wait(page, scroll_count=10, delay=0.001)
+                time.sleep(random.uniform(4, 5))
+                if page.locator('button.gbmc-qa-delivery-trigger.svelte-1uef6g3.gbmc-wide').is_visible():
+                    page.locator('button.gbmc-qa-delivery-trigger.svelte-1uef6g3.gbmc-wide').click()
+                else: 
+                    continue
+
+            time.sleep(random.uniform(2, 3))
+            simulate_human_behavior(page)
+            links = scroll_and_wait(page, scroll_count=10, delay=0.01)
             unique_links = list(set(links))
 
             for link in unique_links:
