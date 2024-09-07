@@ -3,6 +3,7 @@ from datetime import datetime
 import os
 import sys
 import re
+import logging
 
 # Get the current directory of this file
 current_directory = os.path.dirname(os.path.realpath(__file__))
@@ -18,39 +19,69 @@ from Dbuploader import BeerDatabase
 
 class BeerSpider(scrapy.Spider):
     name = 'edekaspider'
-    allowed_domains = 'edeka24.de'
-    start_urls = ['https://www.edeka24.de/Wein-Spirituosen/Bier']
+    allowed_domains = ['edeka24.de']
+    start_urls = ['https://www.edeka24.de/Wein-Spirituosen/Bier/']
 
     def __init__(self, *args, **kwargs):
         super(BeerSpider, self).__init__(*args, **kwargs)
         self.db = BeerDatabase(dbname='crawler_db', user='crawler_user', password='crawler_password')
-        self.site = 1
-
+    
+    
     def parse(self, response):
-        products = response.css('div.product-item')
-        beer_data = []
+        # Extract all product links on the initial page
+        products = response.css('div.product-details a::attr(href)').getall()
+        for link in products:
+            full_url = response.urljoin(link)
+            yield scrapy.Request(url=full_url, callback=self.parse_beer)
+    
+    def parse_beer(self, response):
+        # Extract product details from the product page
+        items = {}
+        name = response.css('h1::text').get()
+        price_text = response.css('li.price-note::text').get()
 
-        for product in products:
-
-            items = {
-                'name': product.css('a.title::attr(title)').get().strip(),
-                'quantity': '1',
-                'unit': 'L',
-                'price': product.css('p.price-note').get().replace('<p class="price-note">','').replace('zzgl. 0,25 € Pfand','').replace('</p>','').replace('zzgl. 1,00 € Pfand','').replace('€/l','').strip(),
-                'currency': '€',
-                'date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                'reseller': 'Edeka24.de',
-                'zipcode': '0000',
-                'alcohol_content': '0000'
-            }
-            items['name'] = re.search(r"^[^\d\s]+(?:\s[^\d\s]+)*", items['name'])[0]
-            beer_data.append(items)
-
+        if name:
+            name = name.strip()
+            # Search for a name pattern and make sure to get the first group correctly
+            name_search = re.search(r"^[^\d\s]+(?:\s[^\d\s]+)*", name)
+            if name_search:
+                name = name_search.group(0)
 
         try:
-            result = self.db.process_entries(beer_data)
+            # Beispiel für das Extrahieren eines Preises mit einem regulären Ausdruck
+            price_text = re.search(r'\d+,\d+', response.text)  # Beispiel: Suchmuster
+            if price_text:
+                price = price_text.group().replace(',', '.')
+                # Weiterverarbeitung des Preises
+            else:
+                # Falls kein Preis gefunden wird, logge eine Warnung
+                logging.warning(f"No price found on {response.url}")
+                # Optional: Setze den Preis auf einen Standardwert oder überspringe die Verarbeitung
+                price = ''
+        except Exception as e:
+            logging.error(f"Error processing {response.url}: {e}")
+
+        
+        items['name'] = name
+        items['quantity'] = int(1)
+        items['unit'] = 'L'
+        items['price'] = float(price)
+        items['currency'] = '€'
+        items['date'] = datetime.now().strftime('%Y-%m-%d')
+        items['reseller'] = 'Edeka24'
+        items['zipcode'] = ''
+        
+        alcohol_content = response.xpath('//strong[contains(text(), "Alkoholgehalt:")]/following-sibling::text()').re_first(r'\b\d+\.\d+%')
+
+        alcohol_content = alcohol_content.replace('%', '').replace(',','.') if alcohol_content is not None else None
+        alcohol_content = float(alcohol_content) if alcohol_content is not None else None
+        
+        items['alcohol_content'] = alcohol_content
+
+        try:
+            result = self.db.process_entries(items)
             self.logger.info(f"Inserted data: {result}")
         except Exception as e:
             self.logger.error(f"Error inserting data: {e}")
 
-        yield beer_data
+        yield items

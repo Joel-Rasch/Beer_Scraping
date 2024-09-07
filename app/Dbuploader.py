@@ -22,20 +22,29 @@ class BeerDatabase:
             cursor.execute(query, params)
             return cursor.fetchone()
 
-    def get_or_insert_beer(self, name, alcohol_percentage):
-        select_query = """
-        SELECT beer_id FROM Beers WHERE name = %s AND alcohol_percentage = %s;
+    def get_or_insert_beer(self, name, alcohol_percentage=None):
+        select_query = """  
+        SELECT beer_id FROM Beers WHERE name = %s AND (alcohol_percentage = %s OR alcohol_percentage IS NULL);  
         """
         result = self._execute_query(select_query, (name, alcohol_percentage))
         if result:
             return result[0]
         else:
-            insert_query = """
-            INSERT INTO Beers (name, alcohol_percentage)
-            VALUES (%s, %s)
-            RETURNING beer_id;
-            """
-            return self._execute_query(insert_query, (name, alcohol_percentage))[0]
+            # Adjust the insert query to handle NULL alcohol_percentage
+            if alcohol_percentage is None:
+                insert_query = """  
+                INSERT INTO Beers (name, alcohol_percentage)  
+                VALUES (%s, NULL)  
+                RETURNING beer_id;  
+                """
+                return self._execute_query(insert_query, (name,))[0]
+            else:
+                insert_query = """  
+                INSERT INTO Beers (name, alcohol_percentage)  
+                VALUES (%s, %s)  
+                RETURNING beer_id;  
+                """
+                return self._execute_query(insert_query, (name, alcohol_percentage))[0]
 
     def get_or_insert_format(self, beer_id, quantity, unit):
         select_query = """
