@@ -72,7 +72,13 @@ def parse_beer_info(page):
     }
 
     try:
-        beer_info['name'] = page.query_selector('h1.keyfacts__title').inner_text()
+        beer_name = page.query_selector('h1.keyfacts__title').inner_text()
+        beer_name = re.sub(r"^\d+.*?(Bierfass|Bierfässer)\s*", "", beer_name, flags=re.IGNORECASE)
+        beer_name = re.sub(r"\s+\d+\s*L.*$", "", beer_name, flags=re.IGNORECASE)
+        beer_name = re.sub(r", Bierfass.*$", "", beer_name, flags=re.IGNORECASE)
+        beer_name = re.sub(r" mit Zapfhahn.*$", "", beer_name, flags=re.IGNORECASE)
+        beer_name = beer_name.strip()
+        beer_info['name'] = beer_name
     except:
         print(f'Could not find name for {page.url}')
 
@@ -82,20 +88,18 @@ def parse_beer_info(page):
         if price_match:
             beer_info['price'] = float(price_match.group(1).replace(',', '.'))
             beer_info['currency'] = '€'
-
-
     except:
         print(f'Could not find price for {page.url}')
 
     try:
-        anzahl = re.search(r'(\d+)\s*(?:x|×)\s*', beer_info['name'])
+        anzahl = re.search(r'(\d+)\s*(?:x|×)\s*', page.query_selector('h1.keyfacts__title').inner_text())
         quantity_info = page.query_selector('li.wine.bottlesize span').inner_text()
         quantity_match = re.search(r'(\d+)\-([a-zA-Z]+)', quantity_info)
         if quantity_match and anzahl:
-            beer_info['quantity'] = float(quantity_match.group(1)) * float(anzahl.group(1))
+            beer_info['quantity'] = round(float(quantity_match.group(1)) * float(anzahl.group(1)),2)
             beer_info['unit'] = quantity_match.group(2)
         elif quantity_match:
-            beer_info['quantity'] = float(quantity_match.group(1))
+            beer_info['quantity'] = round(float(quantity_match.group(1)),2)
             beer_info['unit'] = quantity_match.group(2)
     except:
         print(f'Could not find quantity info for {page.url}')
