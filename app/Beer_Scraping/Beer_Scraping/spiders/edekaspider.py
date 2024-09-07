@@ -63,9 +63,9 @@ class BeerSpider(scrapy.Spider):
 
         
         items['name'] = name
-        items['quantity'] = '1'
+        items['quantity'] = int(1)
         items['unit'] = 'L'
-        items['price'] = price
+        items['price'] = float(price)
         items['currency'] = '€'
         items['date'] = datetime.now().strftime('%Y-%m-%d')
         items['reseller'] = 'Edeka24'

@@ -64,10 +64,10 @@ class BeerSpider(scrapy.Spider):
         else:
             price = None
         
-        items['price'] = price
+        items['price'] = float(price)
         items['date'] = datetime.now().strftime('%Y-%m-%d')
         items['reseller'] = 'Netto Online'
-        items['quantity'] = '1'
+        items['quantity'] = int(1)
         items['unit'] = 'L'
         items['currency'] = '€'
         items['zipcode'] = ''
