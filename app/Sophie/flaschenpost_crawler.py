@@ -1,9 +1,10 @@
 import asyncio
-from datetime import date
+from datetime import datetime
 import pandas
 from playwright.async_api import async_playwright
 import os
 import sys
+import re
 
 # Get the current directory of this file
 current_directory = os.path.dirname(os.path.realpath(__file__))
@@ -86,14 +87,40 @@ async def goto_subcategory(page, links, logic_fn, zipcode):
 def split_price(price):
     price = price.split()
     currency = price[1]
-    price = price[0]
+    price = price[0].replace(",", ".")
     return currency, price
 
 def parse_product_string(amount_des):
-    amount_infos = amount_des.split('L')
-    quantity = amount_infos[0]
-    unit = 'L'
-    return quantity, unit
+    # Regular expression to extract only quantity and unit
+    pattern = r"(\d+x)?(\d+(?:,\d+)?)([a-zA-Z]+)"
+    match = re.search(pattern, amount_des)
+
+    if match:
+        multiplier = match.group(1)  # Optionaler Multiplikator wie '6x'
+        quantity = match.group(2).replace(",", ".")  # Die Menge, z.B. '0,5'
+        unit = match.group(3)  # Die Einheit, z.B. 'l'
+
+        if multiplier:  # Wenn ein Multiplikator wie '6x' vorhanden ist
+            multiplier = int(multiplier[:-1])  # Entferne das 'x' und konvertiere zu int
+            quantity = float(quantity) * multiplier  # Berechne die Gesamtmenge
+
+        return float(quantity), unit
+    else:
+        return float(0.0), "k.A."
+    
+
+def create_csv(dataframe, postfix, zipcode):
+    dataframe.to_csv(f"./Export/flaschenpost_exports/flaschenpost_{zipcode}_{postfix}_{datetime.now().strftime('%Y-%m-%d')}.csv", index=False)
+    print("CSV created")
+
+def write_to_db(entry):
+    db = BeerDatabase(dbname='crawler_db', user='crawler_user', password='crawler_password', host='postgres',
+                      port='5432')
+    try:
+        result = db.process_entries(entry)
+        print(f"Inserted data: {result}")
+    except Exception as e:
+        print(f"Error inserting data: {e}")
 
 async def get_content(page, zipcode):
     
@@ -125,7 +152,7 @@ async def get_content(page, zipcode):
             else:
                 price = "Out of stock"
                 currency = ""
-            current_date = date.today().strftime("%d/%m/%Y")
+            current_date = datetime.now().strftime('%Y-%m-%d')
             reseller = "Flaschenpost"
             zipcode = zipcode
             
@@ -135,6 +162,7 @@ async def get_content(page, zipcode):
                'unit': unit,
                'price': price,
                'currency': currency,
+               'alcohol_content': None,
                'date': current_date,
                'reseller': reseller,
                'zipcode': zipcode}
@@ -155,16 +183,6 @@ async def get_content(page, zipcode):
     
     return dataframe
 
-def create_csv(dataframe, postfix, zipcode):
-    dataframe.to_csv(f"./Export/flaschenpost_exports/flaschenpost_{zipcode}_{postfix}_{date.today().strftime('%Y%m%d')}.csv", index=False)
-    print("CSV created")
-
-def write_to_db(entry):
-    try:
-        result = BeerDatabase.process_entries(entry)
-        print(f"Inserted data: {result}")
-    except Exception as e:
-        print(f"Error inserting data: {e}")
     
 
 
