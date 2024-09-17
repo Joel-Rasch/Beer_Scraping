@@ -48,6 +48,8 @@ class BeerSpider(scrapy.Spider):
                 name = name_search.group(0)
         
         items['name'] = name
+
+        items['url'] = response.url
         
         # Extract price parts
         base_price_1 = response.css('.product-property__base-price .product-property__value::text').get(default='')
