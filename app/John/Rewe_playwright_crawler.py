@@ -216,6 +216,7 @@ def run(output='database', db=None, csv_filename='beer_data.csv'):
                             'date': datetime.now().strftime('%Y-%m-%d'),
                             'reseller': reseller,
                             'zipcode': zip_code,
+                            'url': link
                         }
 
                         if output == 'database' and db is not None:
