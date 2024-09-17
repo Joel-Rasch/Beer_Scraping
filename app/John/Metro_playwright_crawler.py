@@ -61,7 +61,7 @@ def scroll_and_wait(page, scroll_count=10, delay=1):
     return links
 
 
-def parse_beer_info(page, reseller, zipcode):
+def parse_beer_info(page, reseller, zipcode, link):
     beer_info = {
         'name': None,
         'quantity': None,
@@ -70,7 +70,8 @@ def parse_beer_info(page, reseller, zipcode):
         'currency': None,
         'alcohol_content': None,
         'reseller': reseller,
-        'zipcode': zipcode
+        'zipcode': zipcode,
+        'url': link 
     }
 
     try:
@@ -162,7 +163,7 @@ def run(output='database', db=None, csv_filename='metro_beer_data.csv'):
                     try:
                         page.goto(link, wait_until='domcontentloaded')
                         simulate_human_behavior(page)
-                        beer_info = parse_beer_info(page, reseller, zipcode)
+                        beer_info = parse_beer_info(page, reseller, zipcode, link)
 
                         entry = {
                             **beer_info,
