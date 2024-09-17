@@ -71,6 +71,7 @@ class BanachspiderSpider(scrapy.Spider):
         # Extract name and other relevant information
         beer_data['name'] = response.css('h1.product--title::text').get().split('\n')[1]
         beer_data['zipcode'] = '45356'
+        beer_data['url'] = response.url
         # Extract alcohol content
         alcohol_content = response.xpath('//div[@class="product--description"]/p/strong/text()').re_first(r'(\d.*)\%')
         alcohol_content = alcohol_content.replace(',', '.')
