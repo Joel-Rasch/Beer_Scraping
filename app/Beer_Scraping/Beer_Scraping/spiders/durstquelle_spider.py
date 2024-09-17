@@ -55,7 +55,7 @@ class DurstquelleSpider(scrapy.Spider):
         else:
             name = product_string, 
             quantity = float(0.0)
-            unit = "k.A."
+            unit = ""
 
         # Extract the product price
         price_curr = response.css('.price::text').get()
@@ -76,7 +76,8 @@ class DurstquelleSpider(scrapy.Spider):
                'alcohol_content': None,
                'date': current_date,
                'reseller': reseller,
-               'zipcode': zipcode}
+               'zipcode': zipcode,
+               'url':response.url}
         
         try:
             result = self.db.process_entries(beer_data)
