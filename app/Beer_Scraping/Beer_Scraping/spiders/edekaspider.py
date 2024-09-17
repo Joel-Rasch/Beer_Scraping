@@ -70,6 +70,7 @@ class BeerSpider(scrapy.Spider):
         items['date'] = datetime.now().strftime('%Y-%m-%d')
         items['reseller'] = 'Edeka24'
         items['zipcode'] = ''
+        items['url'] = response.url
         
         alcohol_content = response.xpath('//strong[contains(text(), "Alkoholgehalt:")]/following-sibling::text()').re_first(r'\b\d+\.\d+%')
 
