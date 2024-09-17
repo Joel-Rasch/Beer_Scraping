@@ -17,7 +17,7 @@ sys.path.append(parent_directory)
 
 from Dbuploader import BeerDatabase
 
-async def browse_page(link, logic_fn):
+async def browse_page(link):
     CHROMIUM_ARGS= [
 		'--disable-blink-features=AutomationControlled',
 	]
@@ -38,7 +38,8 @@ async def browse_page(link, logic_fn):
                         break
                 break
         
-        await logic_fn(page)
+        link = 'https://www.goflink.com/de-DE/shop/category/bier/'
+        await get_content(page, link)
         await browser.close()    
         
 
@@ -91,13 +92,10 @@ def write_to_db(entry):
     except Exception as e:
         print(f"Error inserting data: {e}")
 
-async def get_content(page):
+async def get_content(page, link):
     # Dictionary for current product data
     beer_data = {}
 
-    # DataFrame for CSV export
-    dataframe = pandas. DataFrame(columns = ['name', 'quantity', 'unit', 'price', 'currency', 'date', 'reseller', 'zipcode'])
-    
     #Get all products on the page
     products =  await page.locator('.product-card-grid-item').all()
     
@@ -110,10 +108,10 @@ async def get_content(page):
         currency, price = split_price(price)
         current_date = datetime.now().strftime('%Y-%m-%d')
         reseller = "Flink"
-        zipcode = "Hamburg"
+        zipcode = "online"
 
         # Current product data
-        beer_data =  {'name': name,
+        beer_data =  {'name': beer,
                'quantity': quantity,
                'unit': unit,
                'price': price,
@@ -121,22 +119,17 @@ async def get_content(page):
                'alcohol_content': None,
                'date': current_date,
                'reseller': reseller,
-               'zipcode': zipcode}
+               'zipcode': zipcode,
+               'url': link}
         
         # Create DB entry with current product data
         write_to_db(beer_data)
-        
-        # DataFrame for CSV export
-        dataframe = dataframe._append({'name': beer, 'quantity': quantity, 'unit': unit, 'price': price, 'currency': currency, 'date': current_date, 'reseller': reseller, 'zipcode': zipcode}, ignore_index=True)
-    return dataframe
+        # print(beer_data)
 
 
 async def main():
     link = "https://www.goflink.com/de-DE/shop"
-    async def page_logic(page):
-        products = await get_content(page)          
-        create_csv(products)
-    await browse_page(link, page_logic)
+    await browse_page(link)
 
 
 if __name__ == "__main__":
