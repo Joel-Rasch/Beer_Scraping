@@ -43,6 +43,7 @@ class BeerSpider(scrapy.Spider):
         beer_data = {}
         beer_data['date'] = datetime.now()
         beer_data['reseller'] = 'Biertaxi'
+        beer_data['url'] = response.url
         # Extract price
         price = response.xpath("//span[contains(@class,'price')]/text()").get()
         if price:
