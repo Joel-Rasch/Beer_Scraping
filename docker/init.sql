@@ -30,7 +30,7 @@ CREATE TABLE Prices (
     price DECIMAL(10,2) NOT NULL,  
     currency VARCHAR(10) NOT NULL,  
     date DATE,  
-    url VARCHAR(255) NOT NULL,  
+    url VARCHAR(2000) NOT NULL,  
     FOREIGN KEY (beer_id) REFERENCES Beers(beer_id),  
     FOREIGN KEY (format_id) REFERENCES Formats(format_id),  
     FOREIGN KEY (reseller_id) REFERENCES Resellers(reseller_id)  
