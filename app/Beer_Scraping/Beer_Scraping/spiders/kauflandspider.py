@@ -79,6 +79,7 @@ class BeerSpider(scrapy.Spider):
         items['price'] = price
         
         items['currency'] = '€'
+        items['url'] = response.url
         
         items['date'] = datetime.now().strftime('%Y-%m-%d')
         items['reseller'] = 'Kaufland'
