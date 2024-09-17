@@ -41,6 +41,7 @@ class BeerSpider(scrapy.Spider):
         beer_data = {}
         beer_data['date'] = datetime.now()
         beer_data['reseller'] = 'Getränke Hoffmann'
+        beer_data['url'] = response.url
         # Extract price
         price = response.css('span.price::text').get()
         if price:
