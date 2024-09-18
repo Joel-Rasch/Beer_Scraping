@@ -50,7 +50,7 @@ class BeerSpider(scrapy.Spider):
             parts = price.split(' ')
             beer_data['currency'] = parts[0][-1]
             beer_data['price'] = float(parts[0][0:-1].replace(',', '.'))
-        beer_data['zipcode'] = response.css("table.table.table-striped").re_first('40549')
+        beer_data['zipcode'] = ''
 
         beer_data['quantity'] = round(float(response.xpath("//span[contains(@class,'info package')]/text()").get().split('x')[0]
         ) * float(response.xpath("//span[contains(@class,'info package')]/text()").get().split('x')[-1].split('l')[0]),2)
