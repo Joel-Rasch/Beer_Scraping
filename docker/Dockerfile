@@ -67,11 +67,10 @@ RUN echo '#!/bin/bash\n\
 Xvfb :99 -screen 0 1024x768x16 &\n\
 export DISPLAY=:99\n\
 sleep 2\n\
-python /app/John/Metro_playwright_crawler.py \n\
 python /app/John/Lidl_playwright_crawler.py \n\
-python /app/Sophie/flaschenpost_crawler.py \n\
-python /app/Sophie/goflink_crawler.py \n\
+python /app/John/Metro_playwright_crawler.py \n\
 python /app/John/Rewe_playwright_crawler.py \n\
+python /app/Sophie/goflink_crawler.py \n\
 cd /app/Beer_Scraping && scrapy crawl durstquelle_spider \n\
 cd /app/Beer_Scraping && scrapy crawl banachspider \n\
 cd /app/Beer_Scraping && scrapy crawl edekaspider \n\
