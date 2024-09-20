@@ -154,7 +154,7 @@ async def get_content(page, zipcode, link):
                 currency = ""
             current_date = datetime.now().strftime('%Y-%m-%d')
             reseller = "Flaschenpost"
-            zipcode = zipcode
+            zipcode = str(zipcode)
             
             # Current product data
             beer_data =  {'name': name,
