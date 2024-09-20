@@ -71,6 +71,7 @@ python /app/John/Lidl_playwright_crawler.py \n\
 python /app/John/Metro_playwright_crawler.py \n\
 python /app/John/Rewe_playwright_crawler.py \n\
 python /app/Sophie/goflink_crawler.py \n\
+python /app/Sophie/flaschenpost_crawler.py \n\
 cd /app/Beer_Scraping && scrapy crawl durstquelle_spider \n\
 cd /app/Beer_Scraping && scrapy crawl banachspider \n\
 cd /app/Beer_Scraping && scrapy crawl edekaspider \n\
